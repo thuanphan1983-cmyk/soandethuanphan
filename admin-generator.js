@@ -49,6 +49,8 @@ const GEMINI_API_KEY = "";
     setupEventListeners();
     initPresenceMonitoring();
     loadAdminExamBank();
+    updateMatrixQuestionCounts();
+    updateQuestionCounterAndEmptyState();
 
     // Tự động load OpenRouter API key đã lưu nếu có
     const savedKey = localStorage.getItem('lms_openrouter_api_key') || localStorage.getItem('lms_gemini_api_key');
@@ -188,6 +190,22 @@ const GEMINI_API_KEY = "";
     const btnExportWordSolBottom = document.getElementById('btn-export-word-solutions-bottom');
     if (btnExportWordSolBottom) btnExportWordSolBottom.addEventListener('click', () => handleExportWord('omml', true, btnExportWordSolBottom));
 
+    // Các nút chèn nhanh STEM Toolkit (BBT & SVG Graph)
+    const btnInsertBbt = document.getElementById('btn-insert-sample-bbt');
+    if (btnInsertBbt) btnInsertBbt.addEventListener('click', handleInsertSampleBbt);
+
+    const btnInsertParabola = document.getElementById('btn-insert-graph-parabola');
+    if (btnInsertParabola) btnInsertParabola.addEventListener('click', () => handleInsertSampleGraph('parabola'));
+
+    const btnInsertCubic = document.getElementById('btn-insert-graph-cubic');
+    if (btnInsertCubic) btnInsertCubic.addEventListener('click', () => handleInsertSampleGraph('cubic'));
+
+    const btnInsertRational = document.getElementById('btn-insert-graph-rational');
+    if (btnInsertRational) btnInsertRational.addEventListener('click', () => handleInsertSampleGraph('rational'));
+
+    const btnAddQuick = document.getElementById('btn-add-quick-question');
+    if (btnAddQuick) btnAddQuick.addEventListener('click', handleAddNewEmptyQuestion);
+
     // Tự động tính số lượng câu từ tỷ lệ % ma trận
     const totalQInput = document.getElementById('matrix-total-questions');
     if (totalQInput) {
@@ -200,20 +218,47 @@ const GEMINI_API_KEY = "";
   }
 
   function updateMatrixQuestionCounts() {
-    const total = parseInt(document.getElementById('matrix-total-questions').value, 10) || 10;
-    const pNb = parseInt(document.getElementById('matrix-pct-nb').value, 10) || 40;
-    const pTh = parseInt(document.getElementById('matrix-pct-th').value, 10) || 30;
-    const pVd = parseInt(document.getElementById('matrix-pct-vd').value, 10) || 20;
-    const pVdc = parseInt(document.getElementById('matrix-pct-vdc').value, 10) || 10;
+    const totalInput = document.getElementById('matrix-total-questions');
+    const total = totalInput ? (parseInt(totalInput.value, 10) || 20) : 20;
+
+    const elNb = document.getElementById('matrix-pct-nb');
+    const elTh = document.getElementById('matrix-pct-th');
+    const elVd = document.getElementById('matrix-pct-vd');
+    const elVdc = document.getElementById('matrix-pct-vdc');
+
+    const pNb = elNb ? (parseInt(elNb.value, 10) || 40) : 40;
+    const pTh = elTh ? (parseInt(elTh.value, 10) || 30) : 30;
+    const pVd = elVd ? (parseInt(elVd.value, 10) || 20) : 20;
+    const pVdc = elVdc ? (parseInt(elVdc.value, 10) || 10) : 10;
+
+    // Cập nhật số % hiển thị bên cạnh thanh trượt
+    const valNb = document.getElementById('matrix-pct-nb-val');
+    const valTh = document.getElementById('matrix-pct-th-val');
+    const valVd = document.getElementById('matrix-pct-vd-val');
+    const valVdc = document.getElementById('matrix-pct-vdc-val');
+    if (valNb) valNb.textContent = `${pNb}%`;
+    if (valTh) valTh.textContent = `${pTh}%`;
+    if (valVd) valVd.textContent = `${pVd}%`;
+    if (valVdc) valVdc.textContent = `${pVdc}%`;
+
+    // Cập nhật thanh tiến độ trực quan đa sắc
+    const progNb = document.getElementById('matrix-progress-nb');
+    const progTh = document.getElementById('matrix-progress-th');
+    const progVd = document.getElementById('matrix-progress-vd');
+    const progVdc = document.getElementById('matrix-progress-vdc');
+    if (progNb) progNb.style.width = `${pNb}%`;
+    if (progTh) progTh.style.width = `${pTh}%`;
+    if (progVd) progVd.style.width = `${pVd}%`;
+    if (progVdc) progVdc.style.width = `${pVdc}%`;
 
     const countNb = Math.round(total * (pNb / 100));
     const countTh = Math.round(total * (pTh / 100));
     const countVd = Math.round(total * (pVd / 100));
-    const countVdc = total - (countNb + countTh + countVd);
+    const countVdc = Math.max(0, total - (countNb + countTh + countVd));
 
-    const info = document.getElementById('matrix-calculated-counts');
+    const info = document.getElementById('matrix-preview-info') || document.getElementById('matrix-calculated-counts');
     if (info) {
-      info.textContent = `Dự kiến: ${countNb} câu NB, ${countTh} câu TH, ${countVd} câu VD, ${countVdc} câu VDC (Tổng: ${total} câu)`;
+      info.textContent = `Dự kiến: ${countNb} NB, ${countTh} TH, ${countVd} VD, ${countVdc} VDC (Tổng: ${total} câu)`;
     }
   }
 
@@ -706,10 +751,26 @@ CẤU TRÚC JSON ĐẦU RA BẮT BUỘC:
   // ==========================================
   // 4. EDITABLE PREVIEW & UPLOAD ẢNH GEOGEBRA
   // ==========================================
+  function updateQuestionCounterAndEmptyState() {
+    const cards = previewQuestionsList ? previewQuestionsList.querySelectorAll('.editable-question-card') : [];
+    const count = cards.length;
+    const counter = document.getElementById('preview-question-counter');
+    if (counter) counter.textContent = `${count} câu hỏi`;
+
+    const emptyState = document.getElementById('preview-empty-state');
+    const bottomActions = document.getElementById('preview-bottom-actions');
+    if (count === 0) {
+      if (emptyState) emptyState.style.display = 'block';
+      if (bottomActions) bottomActions.classList.add('hidden');
+    } else {
+      if (emptyState) emptyState.style.display = 'none';
+      if (bottomActions) bottomActions.classList.remove('hidden');
+    }
+  }
+
   function renderEditablePreview(exam) {
-    editablePreviewSection.classList.remove('hidden');
-    examTitleInput.value = exam.title || '';
-    examDurationInput.value = exam.durationMinutes || 45;
+    if (examTitleInput) examTitleInput.value = exam.title || '';
+    if (examDurationInput) examDurationInput.value = exam.durationMinutes || 45;
 
     previewQuestionsList.innerHTML = '';
 
@@ -719,6 +780,8 @@ CẤU TRÚC JSON ĐẦU RA BẮT BUỘC:
       // Gọi cập nhật Live KaTeX Preview ngay lập tức khi sinh đề
       updateCardKaTeXPreview(card);
     });
+
+    updateQuestionCounterAndEmptyState();
 
     // Render KaTeX trên toàn bộ preview
     if (typeof renderMathInElement === 'function') {
@@ -743,103 +806,112 @@ CẤU TRÚC JSON ĐẦU RA BẮT BUỘC:
 
   function createEditableQuestionCard(q, idx) {
     const card = document.createElement('div');
-    card.className = 'editable-question-card';
+    card.className = 'editable-question-card bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md p-5 transition-all space-y-4';
     card.setAttribute('data-question-idx', idx);
 
     // Kiểm tra placeholder [CHÈN HÌNH ẢNH]
     const hasPlaceholder = q.content && q.content.includes('[CHÈN HÌNH ẢNH]');
 
     card.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <span style="font-weight: 700; color: var(--primary); font-size: 1.1rem;">Câu số ${idx + 1}</span>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <select class="form-control form-select q-level-select" style="width: auto; padding: 4px 28px 4px 8px; font-size: 0.85rem;">
+      <!-- Header câu hỏi -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2.5">
+          <span class="q-card-title-badge inline-flex items-center px-3 py-1 rounded-xl text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200">
+            Câu số ${idx + 1}
+          </span>
+          <select class="form-control form-select q-level-select rounded-lg border border-slate-300 py-1 px-2.5 text-xs font-semibold bg-slate-50 text-slate-700 focus:border-indigo-500 outline-none">
             <option value="NB" ${q.level === 'NB' ? 'selected' : ''}>Nhận biết (NB)</option>
             <option value="TH" ${q.level === 'TH' ? 'selected' : ''}>Thông hiểu (TH)</option>
             <option value="VD" ${q.level === 'VD' ? 'selected' : ''}>Vận dụng (VD)</option>
             <option value="VDC" ${q.level === 'VDC' ? 'selected' : ''}>Vận dụng cao (VDC)</option>
           </select>
-          <button type="button" class="btn btn-sm btn-danger btn-delete-question" title="Xóa câu hỏi này">✕ Xóa</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" class="btn btn-sm btn-delete-question inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition" title="Xóa câu hỏi này">
+            <span>✕</span> Xóa câu
+          </button>
         </div>
       </div>
 
       <!-- Nội dung câu hỏi & Vùng xem trước Live KaTeX -->
-      <div class="form-group">
-        <label class="form-label">Nội dung câu hỏi (hỗ trợ $LaTeX$):</label>
-        <textarea class="form-control q-content-input" rows="3">${q.content || ''}</textarea>
+      <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700">Nội dung đề bài (hỗ trợ $LaTeX$ và $$khối$$):</label>
+        <textarea class="form-control q-content-input w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition font-sans leading-relaxed" rows="3">${q.content || ''}</textarea>
         
-        <!-- Vùng xem trước trực tiếp Live KaTeX Preview -->
-        <div class="live-preview-box q-stem-preview-wrap">
-          <div class="live-preview-header">
-            <span>👁️ Xem trước công thức hiển thị (Live KaTeX):</span>
-            <span class="live-preview-badge">KaTeX STEM</span>
+        <!-- Live KaTeX Preview Box -->
+        <div class="live-preview-box q-stem-preview-wrap bg-blue-50/60 border border-blue-200/80 rounded-xl p-3.5 mt-2">
+          <div class="live-preview-header flex items-center justify-between text-xs font-bold text-blue-900 mb-1.5">
+            <span class="flex items-center gap-1.5"><span>👁️</span> Xem trước công thức hiển thị (Live KaTeX):</span>
+            <span class="live-preview-badge px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] uppercase font-bold tracking-wider">KaTeX STEM</span>
           </div>
-          <div class="q-stem-preview">${q.content || ''}</div>
+          <div class="q-stem-preview text-slate-900 text-xs sm:text-sm leading-relaxed overflow-x-auto min-h-[24px]">${q.content || ''}</div>
         </div>
       </div>
 
-      <!-- Upload ảnh GeoGebra hoặc xem SVG -->
-      <div class="form-group" style="background: #f8fafc; padding: 12px; border-radius: var(--radius-md); border: 1px dashed #cbd5e1;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-          <div>
-            <strong>Đồ thị / Hình vẽ minh họa:</strong>
-            ${hasPlaceholder ? `<span class="badge badge-vd" style="margin-left: 6px;">Cần tải ảnh đồ thị</span>` : ''}
+      <!-- Đồ thị / Hình vẽ minh họa SVG hoặc Ảnh -->
+      <div class="p-3 bg-slate-50/70 border border-slate-200 rounded-xl space-y-2">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+            <span>📈 Đồ thị / Hình vẽ minh họa:</span>
+            ${hasPlaceholder ? `<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">Cần ảnh đồ thị</span>` : ''}
           </div>
-          <label class="upload-btn-wrap">
-            <span>📷 Tải ảnh lên (GeoGebra / Máy tính)</span>
-            <input type="file" class="q-image-file-input" accept="image/*">
+          <label class="upload-btn-wrap inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer transition">
+            <span>📷 Tải ảnh GeoGebra/PNG</span>
+            <input type="file" class="q-image-file-input hidden" accept="image/*">
           </label>
         </div>
 
-        <div class="q-image-preview-area" style="margin-top: 10px; text-align: center;">
-          ${q.imageUrl ? `<img src="${q.imageUrl}" style="max-height: 200px; border-radius: 8px; border: 1px solid #e2e8f0;">` : ''}
-          ${(!q.imageUrl && q.svgContent) ? `<div class="svg-wrap">${q.svgContent}</div>` : ''}
+        <div class="q-image-preview-area text-center">
+          ${q.imageUrl ? `<img src="${q.imageUrl}" class="max-h-52 mx-auto rounded-xl border border-slate-200 shadow-sm">` : ''}
+          ${(!q.imageUrl && q.svgContent) ? `<div class="svg-wrap flex justify-center overflow-x-auto">${q.svgContent}</div>` : ''}
         </div>
       </div>
 
-      <!-- Bảng biến thiên Toggle / Editor & Live KaTeX Preview -->
-      <div class="form-group">
-        <label style="display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer;">
-          <input type="checkbox" class="q-has-bbt-checkbox" ${q.hasBbt ? 'checked' : ''}>
-          <span>Bao gồm Bảng biến thiên (HTML Table)</span>
+      <!-- Bảng biến thiên (BBT) Toggle & Editor -->
+      <div class="space-y-2">
+        <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+          <input type="checkbox" class="q-has-bbt-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4" ${q.hasBbt ? 'checked' : ''}>
+          <span>Bao gồm Bảng biến thiên (HTML Table chuẩn KaTeX)</span>
         </label>
-        <div class="q-bbt-editor-wrap ${q.hasBbt ? '' : 'hidden'}" style="margin-top: 8px;">
-          <textarea class="form-control q-bbt-html-input" rows="4" placeholder="Nhập mã HTML bảng biến thiên...">${q.bbtHtml || ''}</textarea>
+        <div class="q-bbt-editor-wrap ${q.hasBbt ? '' : 'hidden'} space-y-2 pl-6">
+          <textarea class="form-control q-bbt-html-input w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-800 font-mono bg-slate-50 focus:bg-white focus:border-indigo-500 outline-none" rows="4" placeholder="Nhập mã HTML bảng biến thiên...">${q.bbtHtml || ''}</textarea>
           
-          <div class="live-preview-box q-bbt-preview-wrap" style="border-left-color: #d97706; margin-top: 8px;">
-            <div class="live-preview-header" style="color: #d97706;">
-              <span>👁️ Xem trước Bảng Biến Thiên chuẩn HTML Table:</span>
-              <span class="live-preview-badge" style="background: #fef3c7; color: #b45309;">HTML Table + KaTeX</span>
+          <div class="live-preview-box q-bbt-preview-wrap bg-amber-50/60 border border-amber-200/80 rounded-xl p-3.5">
+            <div class="live-preview-header flex items-center justify-between text-xs font-bold text-amber-900 mb-1.5">
+              <span>👁️ Xem trước Bảng Biến Thiên:</span>
+              <span class="live-preview-badge px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold">BBT Table</span>
             </div>
-            <div class="q-bbt-preview">${q.bbtHtml || ''}</div>
+            <div class="q-bbt-preview overflow-x-auto">${q.bbtHtml || ''}</div>
           </div>
         </div>
       </div>
 
       <!-- 4 Đáp án A, B, C, D kèm Live Preview -->
-      <div class="form-group">
-        <label class="form-label">4 Phương án trả lời (chọn nút tròn để đặt đáp án đúng):</label>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700">4 Phương án trả lời (click chọn nút tròn để chỉ định đáp án đúng):</label>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           ${renderOptionInputs(q)}
         </div>
       </div>
 
       <!-- Lời giải chi tiết & Live Preview -->
-      <div class="form-group">
-        <label class="form-label">Lời giải chi tiết:</label>
-        <textarea class="form-control q-explanation-input" rows="2">${q.explanation || ''}</textarea>
+      <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700">Lời giải chi tiết từng bước:</label>
+        <textarea class="form-control q-explanation-input w-full rounded-xl border border-slate-300 p-2.5 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-1 outline-none transition" rows="2">${q.explanation || ''}</textarea>
         
-        <div class="live-preview-box q-expl-preview-wrap" style="border-left-color: #10b981;">
-          <div class="live-preview-header" style="color: #10b981;">
-            <span>👁️ Xem trước Lời giải chi tiết (Live KaTeX):</span>
-            <span class="live-preview-badge" style="background: #dcfce7; color: #15803d;">Lời giải</span>
+        <div class="live-preview-box q-expl-preview-wrap bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-3 mt-1.5">
+          <div class="live-preview-header flex items-center justify-between text-xs font-bold text-emerald-900 mb-1">
+            <span>👁️ Xem trước Lời giải chi tiết:</span>
+            <span class="live-preview-badge px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold">KaTeX Giải</span>
           </div>
-          <div class="q-expl-preview">${q.explanation || ''}</div>
+          <div class="q-expl-preview text-slate-800 text-xs sm:text-sm leading-relaxed overflow-x-auto min-h-[20px]">${q.explanation || ''}</div>
         </div>
       </div>
 
-      <div style="display: flex; justify-content: flex-end;">
-        <button type="button" class="btn btn-sm btn-secondary btn-refresh-math">↻ Làm mới hiển thị KaTeX</button>
+      <div class="flex justify-end pt-1">
+        <button type="button" class="btn btn-sm btn-refresh-math text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 py-1 px-3 rounded-lg border border-slate-200 transition">
+          ↻ Làm mới KaTeX
+        </button>
       </div>
     `;
 
@@ -857,14 +929,14 @@ CẤU TRÚC JSON ĐẦU RA BẮT BUỘC:
       const opt = options.find(o => o.id === label) || { id: label, text: '' };
       const isCorrect = (q.correctAnswer === label);
       html += `
-        <div class="q-opt-wrap" style="background: #ffffff; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <input type="radio" name="correct_radio_${q.id || Math.random()}" value="${label}" class="q-correct-radio" ${isCorrect ? 'checked' : ''} title="Chọn làm đáp án đúng">
-            <strong style="min-width: 20px; color: var(--primary);">${label}.</strong>
-            <input type="text" class="form-control q-opt-text" data-opt-id="${label}" value="${escapeHtml(opt.text)}" placeholder="Nhập đáp án kèm $LaTeX$..." style="padding: 4px 8px; font-size: 0.9rem;">
+        <div class="q-opt-wrap p-3 rounded-xl border transition-all duration-150 ${isCorrect ? 'border-emerald-500 bg-emerald-50/60 shadow-xs ring-1 ring-emerald-500/30' : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'}">
+          <div class="flex items-center gap-2.5">
+            <input type="radio" name="correct_radio_${q.id || Math.random()}" value="${label}" class="q-correct-radio h-4 w-4 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600" ${isCorrect ? 'checked' : ''} title="Chọn làm đáp án đúng">
+            <strong class="min-w-[18px] text-xs font-black ${isCorrect ? 'text-emerald-700' : 'text-indigo-700'}">${label}.</strong>
+            <input type="text" class="form-control q-opt-text flex-1 rounded-lg border border-slate-300 py-1.5 px-2.5 text-xs text-slate-800 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 outline-none" data-opt-id="${label}" value="${escapeHtml(opt.text)}" placeholder="Nhập đáp án kèm $LaTeX$...">
           </div>
-          <div class="q-opt-preview-box">
-            <span style="font-weight: 700; color: var(--primary);">${label}:</span>
+          <div class="q-opt-preview-box mt-2 p-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-700 overflow-x-auto min-h-[26px]">
+            <span class="font-bold text-[11px] text-slate-400 mr-1">${label}:</span>
             <span class="q-opt-preview">${opt.text || ''}</span>
           </div>
         </div>
@@ -1027,29 +1099,59 @@ CẤU TRÚC JSON ĐẦU RA BẮT BUỘC:
       updateCardKaTeXPreview(card);
     });
 
-    // 6. Nút Làm mới KaTeX thủ công nếu cần
-    const btnRefreshMath = card.querySelector('.btn-refresh-math');
-    btnRefreshMath.addEventListener('click', function () {
-      updateCardKaTeXPreview(card);
+    // 6. Tự động đổi màu highlight khi chọn đáp án đúng A, B, C, D
+    card.querySelectorAll('.q-correct-radio').forEach(radio => {
+      radio.addEventListener('change', function () {
+        card.querySelectorAll('.q-opt-wrap').forEach(w => {
+          w.classList.remove('border-emerald-500', 'bg-emerald-50/60', 'shadow-xs', 'ring-1', 'ring-emerald-500/30');
+          w.classList.add('border-slate-200', 'bg-slate-50/50');
+          const lbl = w.querySelector('strong');
+          if (lbl) {
+            lbl.classList.remove('text-emerald-700');
+            lbl.classList.add('text-indigo-700');
+          }
+        });
+        const wrap = this.closest('.q-opt-wrap');
+        if (wrap) {
+          wrap.classList.remove('border-slate-200', 'bg-slate-50/50');
+          wrap.classList.add('border-emerald-500', 'bg-emerald-50/60', 'shadow-xs', 'ring-1', 'ring-emerald-500/30');
+          const lbl = wrap.querySelector('strong');
+          if (lbl) {
+            lbl.classList.remove('text-indigo-700');
+            lbl.classList.add('text-emerald-700');
+          }
+        }
+      });
     });
 
-    // 7. Xóa câu hỏi
+    // 7. Nút Làm mới KaTeX thủ công nếu cần
+    const btnRefreshMath = card.querySelector('.btn-refresh-math');
+    if (btnRefreshMath) {
+      btnRefreshMath.addEventListener('click', function () {
+        updateCardKaTeXPreview(card);
+      });
+    }
+
+    // 8. Xóa câu hỏi
     const btnDelete = card.querySelector('.btn-delete-question');
-    btnDelete.addEventListener('click', function () {
-      if (confirm('Bạn có chắc chắn muốn xóa câu hỏi này?')) {
-        card.remove();
-        reindexPreviewQuestions();
-      }
-    });
+    if (btnDelete) {
+      btnDelete.addEventListener('click', function () {
+        if (confirm('Bạn có chắc chắn muốn xóa câu hỏi này?')) {
+          card.remove();
+          reindexPreviewQuestions();
+        }
+      });
+    }
   }
 
   function reindexPreviewQuestions() {
-    const cards = previewQuestionsList.querySelectorAll('.editable-question-card');
+    const cards = previewQuestionsList ? previewQuestionsList.querySelectorAll('.editable-question-card') : [];
     cards.forEach((card, idx) => {
       card.setAttribute('data-question-idx', idx);
-      const titleSpan = card.querySelector('span');
+      const titleSpan = card.querySelector('.q-card-title-badge') || card.querySelector('span');
       if (titleSpan) titleSpan.textContent = `Câu số ${idx + 1}`;
     });
+    updateQuestionCounterAndEmptyState();
   }
 
   function handleAddNewEmptyQuestion() {
@@ -1057,16 +1159,16 @@ CẤU TRÚC JSON ĐẦU RA BẮT BUỘC:
       id: Date.now(),
       level: "TH",
       levelName: "Thông hiểu",
-      content: "Nhập nội dung câu hỏi mới tại đây...",
+      content: "Nhập nội dung câu hỏi mới tại đây kèm công thức $LaTeX$...",
       hasBbt: false,
       bbtHtml: "",
       svgContent: "",
       imageUrl: "",
       options: [
-        { id: "A", text: "Đáp án A" },
-        { id: "B", text: "Đáp án B" },
-        { id: "C", text: "Đáp án C" },
-        { id: "D", text: "Đáp án D" }
+        { id: "A", text: "Phương án A" },
+        { id: "B", text: "Phương án B" },
+        { id: "C", text: "Phương án C" },
+        { id: "D", text: "Phương án D" }
       ],
       correctAnswer: "A",
       explanation: ""
@@ -1075,6 +1177,130 @@ CẤU TRÚC JSON ĐẦU RA BẮT BUỘC:
     const card = createEditableQuestionCard(newQ, previewQuestionsList.children.length);
     previewQuestionsList.appendChild(card);
     updateCardKaTeXPreview(card);
+    updateQuestionCounterAndEmptyState();
+    card.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  /**
+   * Chèn nhanh 1 câu hỏi mẫu có Bảng Biến Thiên chuẩn HTML Table
+   */
+  function handleInsertSampleBbt() {
+    const newQ = {
+      id: Date.now(),
+      level: "TH",
+      levelName: "Thông hiểu",
+      content: "Cho hàm số $y = f(x)$ xác định trên $\\mathbb{R} \\setminus \\{1\\}$ và có bảng biến thiên như hình dưới đây. Khẳng định nào sau đây là đúng?",
+      hasBbt: true,
+      bbtHtml: `
+      <div class="bbt-table-wrapper">
+        <table class="bbt-table">
+          <thead>
+            <tr>
+              <th class="col-header">$x$</th>
+              <th>$-\\infty$</th>
+              <th>$-1$</th>
+              <th>$2$</th>
+              <th>$+\\infty$</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-header">$y'$</td>
+              <td>$+$</td>
+              <td>$0$</td>
+              <td>$-$</td>
+              <td>$0$</td>
+              <td>$+$</td>
+            </tr>
+            <tr>
+              <td class="col-header">$y$</td>
+              <td>$-\\infty$</td>
+              <td><span class="bbt-arrow-up">↗</span> $5$</td>
+              <td><span class="bbt-arrow-down">↘</span> $-2$</td>
+              <td><span class="bbt-arrow-up">↗</span> $+\\infty$</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`,
+      svgContent: "",
+      imageUrl: "",
+      options: [
+        { id: "A", text: "Hàm số đạt cực đại tại $x = -1$ và giá trị cực đại $y_{\\text{CĐ}} = 5$" },
+        { id: "B", text: "Hàm số đạt cực tiểu tại $x = 5$ và giá trị cực tiểu $y_{\\text{CT}} = -2$" },
+        { id: "C", text: "Hàm số đồng biến trên khoảng $(-1; 2)$" },
+        { id: "D", text: "Hàm số nghịch biến trên khoảng $(-\\infty; -1)$" }
+      ],
+      correctAnswer: "A",
+      explanation: "Dựa vào bảng biến thiên, đạo hàm $y'$ đổi dấu từ dương sang âm khi đi qua $x = -1$ nên hàm số đạt cực đại tại $x = -1$ với $y_{\\text{CĐ}} = 5$. Chọn A."
+    };
+
+    const card = createEditableQuestionCard(newQ, previewQuestionsList.children.length);
+    previewQuestionsList.appendChild(card);
+    updateCardKaTeXPreview(card);
+    updateQuestionCounterAndEmptyState();
+    card.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  /**
+   * Chèn nhanh 1 câu hỏi mẫu có Đồ thị SVG (Parabol, Bậc 3, hoặc Phân thức)
+   */
+  function handleInsertSampleGraph(type) {
+    let svg = '';
+    let content = '';
+    let options = [];
+    let expl = '';
+
+    if (window.LmsWordExport && window.LmsWordExport.generateGraphSvg) {
+      svg = window.LmsWordExport.generateGraphSvg(type);
+    }
+
+    if (type === 'parabola') {
+      content = "Cho hàm số bậc hai $y = ax^2 + bx + c$ có đồ thị hình parabol như hình vẽ bên. Tọa độ đỉnh $I$ của parabol là:";
+      options = [
+        { id: "A", text: "$I(1; -2)$" },
+        { id: "B", text: "$I(-1; 2)$" },
+        { id: "C", text: "$I(2; -1)$" },
+        { id: "D", text: "$I(0; -1)$" }
+      ];
+      expl = "Quan sát đồ thị ta thấy đỉnh parabol có hoành độ $x_I = 1$ và tung độ $y_I = -2$. Do đó tọa độ đỉnh là $I(1; -2)$. Chọn A.";
+    } else if (type === 'cubic') {
+      content = "Đường cong trong hình bên là đồ thị của hàm số nào dưới đây?";
+      options = [
+        { id: "A", text: "$y = x^3 - 3x$" },
+        { id: "B", text: "$y = -x^3 + 3x$" },
+        { id: "C", text: "$y = x^4 - 2x^2$" },
+        { id: "D", text: "$y = \\frac{2x+1}{x-1}$" }
+      ];
+      expl = "Đồ thị có dạng chữ N của hàm số bậc ba với hệ số $a > 0$, đi qua gốc tọa độ $O(0; 0)$ và có 2 điểm cực trị tại $x = \\pm 1$. Do đó hàm số là $y = x^3 - 3x$. Chọn A.";
+    } else {
+      content = "Cho hàm số $y = \\frac{2x+1}{x-1}$ có đồ thị như hình vẽ. Phương trình đường tiệm cận đứng và tiệm cận ngang lần lượt là:";
+      options = [
+        { id: "A", text: "$x = 1$ và $y = 2$" },
+        { id: "B", text: "$x = 2$ và $y = 1$" },
+        { id: "C", text: "$x = -1$ và $y = 2$" },
+        { id: "D", text: "$x = 1$ và $y = -2$" }
+      ];
+      expl = "Tiệm cận đứng là nghiệm của mẫu số $x - 1 = 0 \\Leftrightarrow x = 1$. Tiệm cận ngang là $\\lim_{x \\to \\pm\\infty} \\frac{2x+1}{x-1} = 2 \\Rightarrow y = 2$. Chọn A.";
+    }
+
+    const newQ = {
+      id: Date.now(),
+      level: "VD",
+      levelName: "Vận dụng",
+      content: content,
+      hasBbt: false,
+      bbtHtml: "",
+      svgContent: svg,
+      imageUrl: "",
+      options: options,
+      correctAnswer: "A",
+      explanation: expl
+    };
+
+    const card = createEditableQuestionCard(newQ, previewQuestionsList.children.length);
+    previewQuestionsList.appendChild(card);
+    updateCardKaTeXPreview(card);
+    updateQuestionCounterAndEmptyState();
     card.scrollIntoView({ behavior: 'smooth' });
   }
 
