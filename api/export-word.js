@@ -10,6 +10,7 @@
 const docx = require('docx');
 const JSZip = require('jszip');
 const CFB = require('cfb');
+const zlib = require('zlib');
 
 // =========================================================================
 // 1. CHUẨN HÓA VÀ SANITIZE MÃ LATEX
@@ -544,69 +545,60 @@ function splitTextAndMathRuns(rawText, options = {}, context = null) {
 }
 
 // =========================================================================
-// 3. MATHTYPE OLE PACKAGER (EQUATION.DSMT4 / MTEF v3)
+// 3. BỘ ĐÓNG GÓI MATHTYPE OLE NATIVE (EQUATION.DSMT4 / MTEF v3)
 // =========================================================================
 
+const MTEF_SYMBOL_FONT_MAP = {
+  '+': 0x2B, '-': 0x2D, '=': 0x3D, '<': 0x3C, '>': 0x3E,
+  '(': 0x28, ')': 0x29, '[': 0x5B, ']': 0x5D, '{': 0x7B, '}': 0x7D,
+  '/': 0x2F, '|': 0x7C, ',': 0x2C, '.': 0x2E, ';': 0x3B, ':': 0x3A,
+  '·': 0xB7, '×': 0xD7, '±': 0xB1, '∓': 0x2D,
+  '≤': 0xA3, '≥': 0xB3, '≠': 0xB9, '≈': 0xBB, '≡': 0xDB,
+  '∈': 0xCE, '∉': 0xCD, '⊂': 0xCC, '⊆': 0xCD, '∪': 0xC8, '∩': 0xC7,
+  '∅': 0xC6, '→': 0xAE, '←': 0xAC, '⇒': 0xDE, '⇔': 0xDB,
+  '∞': 0xA5, '°': 0xB0, '∂': 0xB6, '∇': 0xD1, '∀': 0x22, '∃': 0x24
+};
+
+const MTEF_GREEK_LC_MAP = {
+  'α': 0x61, 'β': 0x62, 'γ': 0x67, 'δ': 0x64, 'ε': 0x65,
+  'θ': 0x71, 'λ': 0x6C, 'μ': 0x6D, 'π': 0x70, 'σ': 0x73,
+  'φ': 0x66, 'ω': 0x77
+};
+
+const MTEF_GREEK_UC_MAP = {
+  'Δ': 0x44, 'Ω': 0x57, 'Φ': 0x46, 'Σ': 0x53
+};
+
+const MTEF_MATH_FUNCS = ['sin', 'cos', 'tan', 'cot', 'ln', 'log', 'lim', 'max', 'min', 'arcsin', 'arccos', 'arctan'];
+
+/**
+ * Chuyển đổi mã LaTeX sang chuỗi nhị phân MTEF v3 (MathType Equation Format chuẩn xác)
+ */
 function buildMtefFromLatex(latexStr) {
   const bytes = [];
-  bytes.push(0x03, 0x01, 0x01, 0x01, 0x00); // MTEF v3 Header
-  bytes.push(0x07, 0x00, 0x0C, 0x00); // 12pt
+  // 1. MTEF v3 Header (5 bytes): version 3, platform Windows (1), product EqEditor (1), ver 1, subver 0
+  bytes.push(0x03, 0x01, 0x01, 0x01, 0x00);
+  // 2. Initial size record: Full size 12pt (0x0A)
+  bytes.push(0x0A);
 
-  function pushChar(ch, fontStyle = 0x00) {
-    bytes.push(0x02, fontStyle);
-    const code = ch.charCodeAt(0);
-    if (code <= 0xFF) {
-      bytes.push(code);
-    } else {
-      bytes.push(code & 0xFF, (code >> 8) & 0xFF);
-    }
+  function pushChar(code, typeface) {
+    bytes.push(0x02, (typeface + 128) & 0xFF);
+    bytes.push(code & 0xFF, (code >> 8) & 0xFF);
   }
 
   function parseLine(str) {
-    bytes.push(0x01, 0x00);
+    bytes.push(0x01, 0x00); // LINE tag (1), options (0)
     let i = 0;
     while (i < str.length) {
       const ch = str[i];
-      if (ch === '^') {
+
+      // Bỏ qua khoảng trắng thuần túy
+      if (ch === ' ' || ch === '\t') {
         i++;
-        let sup = '';
-        if (str[i] === '{') {
-          let depth = 1; i++;
-          while (i < str.length && depth > 0) {
-            if (str[i] === '{') depth++;
-            else if (str[i] === '}') depth--;
-            if (depth > 0) sup += str[i];
-            i++;
-          }
-        } else {
-          sup = str[i] || '';
-          i++;
-        }
-        bytes.push(0x03, 0x02, 0x00);
-        parseLine(sup);
-        bytes.push(0x00);
         continue;
       }
-      if (ch === '_') {
-        i++;
-        let sub = '';
-        if (str[i] === '{') {
-          let depth = 1; i++;
-          while (i < str.length && depth > 0) {
-            if (str[i] === '{') depth++;
-            else if (str[i] === '}') depth--;
-            if (depth > 0) sub += str[i];
-            i++;
-          }
-        } else {
-          sub = str[i] || '';
-          i++;
-        }
-        bytes.push(0x03, 0x03, 0x00);
-        parseLine(sub);
-        bytes.push(0x00);
-        continue;
-      }
+
+      // a. Phân số \frac{tử}{mẫu}
       if (str.startsWith('\\frac', i)) {
         i += 5;
         while (str[i] === ' ') i++;
@@ -619,6 +611,8 @@ function buildMtefFromLatex(latexStr) {
             if (depth > 0) num += str[i];
             i++;
           }
+        } else if (i < str.length) {
+          num = str[i++];
         }
         while (str[i] === ' ') i++;
         if (str[i] === '{') {
@@ -629,15 +623,31 @@ function buildMtefFromLatex(latexStr) {
             if (depth > 0) den += str[i];
             i++;
           }
+        } else if (i < str.length) {
+          den = str[i++];
         }
-        bytes.push(0x03, 0x00, 0x00);
-        parseLine(num);
-        parseLine(den);
-        bytes.push(0x00);
+
+        // TMPL tag (3), options (0), selector 14 (tmFRACT), variation 0 (tvFFRACT: Full-size fraction)
+        bytes.push(0x03, 0x00, 0x0E, 0x00);
+        parseLine(num); // Subobject 1: Numerator
+        parseLine(den); // Subobject 2: Denominator
+        bytes.push(0x00); // END TMPL
         continue;
       }
+
+      // b. Căn thức \sqrt{...} hoặc \sqrt[n]{...}
       if (str.startsWith('\\sqrt', i)) {
         i += 5;
+        while (str[i] === ' ') i++;
+        let deg = null;
+        if (str[i] === '[') {
+          deg = ''; i++;
+          while (i < str.length && str[i] !== ']') {
+            deg += str[i];
+            i++;
+          }
+          if (str[i] === ']') i++;
+        }
         while (str[i] === ' ') i++;
         let rad = '';
         if (str[i] === '{') {
@@ -648,27 +658,136 @@ function buildMtefFromLatex(latexStr) {
             if (depth > 0) rad += str[i];
             i++;
           }
+        } else if (i < str.length) {
+          rad = str[i++];
         }
-        bytes.push(0x03, 0x01, 0x00);
-        parseLine(rad);
-        bytes.push(0x00);
+
+        if (deg !== null) {
+          // Nth root: selector 13 (tmROOT), variation 1 (tvNTHROOT)
+          bytes.push(0x03, 0x00, 0x0D, 0x01);
+          parseLine(rad);
+          parseLine(deg);
+        } else {
+          // Square root: selector 13 (tmROOT), variation 0 (tvSQROOT)
+          bytes.push(0x03, 0x00, 0x0D, 0x00);
+          parseLine(rad);
+        }
+        bytes.push(0x00); // END TMPL
         continue;
       }
-      pushChar(ch);
+
+      // c. Số mũ / Superscript ^
+      if (ch === '^') {
+        i++;
+        let sup = '';
+        if (str[i] === '{') {
+          let depth = 1; i++;
+          while (i < str.length && depth > 0) {
+            if (str[i] === '{') depth++;
+            else if (str[i] === '}') depth--;
+            if (depth > 0) sup += str[i];
+            i++;
+          }
+        } else if (i < str.length) {
+          sup = str[i++];
+        }
+        // TMPL tag (3), options (0), selector 15 (tmSCRIPT), variation 0 (tvSUPER)
+        bytes.push(0x03, 0x00, 0x0F, 0x00);
+        parseLine(sup);
+        bytes.push(0x00); // END TMPL
+        continue;
+      }
+
+      // d. Chỉ số dưới / Subscript _
+      if (ch === '_') {
+        i++;
+        let sub = '';
+        if (str[i] === '{') {
+          let depth = 1; i++;
+          while (i < str.length && depth > 0) {
+            if (str[i] === '{') depth++;
+            else if (str[i] === '}') depth--;
+            if (depth > 0) sub += str[i];
+            i++;
+          }
+        } else if (i < str.length) {
+          sub = str[i++];
+        }
+        // TMPL tag (3), options (0), selector 15 (tmSCRIPT), variation 1 (tvSUB)
+        bytes.push(0x03, 0x00, 0x0F, 0x01);
+        parseLine(sub);
+        bytes.push(0x00); // END TMPL
+        continue;
+      }
+
+      // e. Các hàm giải tích (sin, cos, tan, log, ln, lim...)
+      let matchedFunc = false;
+      for (const fn of MTEF_MATH_FUNCS) {
+        if (str.startsWith(fn, i) || str.startsWith('\\' + fn, i)) {
+          const fnLen = str.startsWith('\\' + fn, i) ? fn.length + 1 : fn.length;
+          for (let k = 0; k < fn.length; k++) {
+            pushChar(fn.charCodeAt(k), 2); // fnFUNCTION = 2
+          }
+          i += fnLen;
+          matchedFunc = true;
+          break;
+        }
+      }
+      if (matchedFunc) continue;
+
+      // f. Ký hiệu toán học Symbol font
+      if (MTEF_SYMBOL_FONT_MAP[ch] !== undefined) {
+        pushChar(MTEF_SYMBOL_FONT_MAP[ch], 6); // fnSYMBOL = 6
+        i++;
+        continue;
+      }
+
+      // g. Chữ Hy Lạp thường & hoa
+      if (MTEF_GREEK_LC_MAP[ch] !== undefined) {
+        pushChar(MTEF_GREEK_LC_MAP[ch], 4); // fnLCGREEK = 4
+        i++;
+        continue;
+      }
+      if (MTEF_GREEK_UC_MAP[ch] !== undefined) {
+        pushChar(MTEF_GREEK_UC_MAP[ch], 5); // fnUCGREEK = 5
+        i++;
+        continue;
+      }
+
+      // h. Biến số chữ cái [a-zA-Z]
+      if (/[a-zA-Z]/.test(ch)) {
+        pushChar(ch.charCodeAt(0), 3); // fnVARIABLE = 3
+        i++;
+        continue;
+      }
+
+      // i. Chữ số [0-9]
+      if (/[0-9]/.test(ch)) {
+        pushChar(ch.charCodeAt(0), 8); // fnNUMBER = 8
+        i++;
+        continue;
+      }
+
+      // j. Ký tự văn bản thông thường
+      pushChar(ch.charCodeAt(0), 1); // fnTEXT = 1
       i++;
     }
-    bytes.push(0x00);
+    bytes.push(0x00); // END LINE
   }
 
   parseLine(latexStr);
-  bytes.push(0x00);
+  bytes.push(0x00); // END MTEF
   return Buffer.from(bytes);
 }
 
+/**
+ * Đóng gói đối tượng OLE Compound File chuẩn Microsoft Office (ProgID: Equation.DSMT4, CLSID: MathType 6.0)
+ */
 function buildMathTypeOleCompoundFile(mtefBytes) {
   const compObj = [
     0x01, 0x00, 0xFE, 0xFF, 0x03, 0x0A, 0x00, 0x00,
     0xFF, 0xFF, 0xFF, 0xFF,
+    // CLSID {0002CE02-0000-0000-C000-000000000046} (MathType 6.0 Equation)
     0x02, 0xCE, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
     0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46,
     0x16, 0x00, 0x00, 0x00
@@ -682,11 +801,12 @@ function buildMathTypeOleCompoundFile(mtefBytes) {
 
   const objInfo = [0x00, 0x00, 0x03, 0x00, 0x0D, 0x00];
 
+  // EQNOLEFILEHDR (28 bytes)
   const hdr = Buffer.alloc(28);
-  hdr.writeUInt16LE(28, 0);
-  hdr.writeUInt32LE(0x00020000, 2);
-  hdr.writeUInt16LE(2, 6);
-  hdr.writeUInt32LE(mtefBytes.length, 8);
+  hdr.writeUInt16LE(28, 0); // cbHdr = 28
+  hdr.writeUInt32LE(0x00020000, 2); // version = 0x00020000
+  hdr.writeUInt16LE(2, 6); // cf = 2
+  hdr.writeUInt32LE(mtefBytes.length, 8); // cbObject
 
   const eqNative = Buffer.concat([hdr, mtefBytes]);
 
@@ -697,26 +817,182 @@ function buildMathTypeOleCompoundFile(mtefBytes) {
   return Buffer.from(CFB.write(cfb, { type: 'buffer' }));
 }
 
+/**
+ * Tạo ảnh preview PNG sắc nét hiển thị công thức trong Word / WPS
+ * Tránh triệt để lỗi "ô tròn rỗng" hoặc khung trắng trước khi nhấp đúp
+ */
+function generateFormulaPreviewPng(textStr) {
+  const displayStr = textStr.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)')
+                            .replace(/\\sqrt\{([^}]+)\}/g, '√($1)')
+                            .replace(/\\cdot/g, '·')
+                            .replace(/\\infty/g, '∞')
+                            .replace(/\\in\s*fty/g, '∞')
+                            .replace(/\\pm/g, '±')
+                            .replace(/\\le\b|\\leq\b/g, '≤')
+                            .replace(/\\ge\b|\\geq\b/g, '≥')
+                            .replace(/\\neq\b|\\ne\b/g, '≠')
+                            .replace(/[{}\\]/g, '')
+                            .trim() || 'f(x)';
+
+  const charW = 7;
+  const charH = 14;
+  const paddingX = 8;
+  const paddingY = 4;
+  const width = Math.max(36, Math.min(600, displayStr.length * charW + paddingX * 2));
+  const height = charH + paddingY * 2;
+
+  const rowSize = 1 + width * 4;
+  const rawData = Buffer.alloc(rowSize * height);
+
+  // Nền trắng tinh khiết
+  for (let y = 0; y < height; y++) {
+    const rowOffset = y * rowSize;
+    rawData[rowOffset] = 0;
+    for (let x = 0; x < width; x++) {
+      const pxOffset = rowOffset + 1 + x * 4;
+      rawData[pxOffset] = 255;
+      rawData[pxOffset + 1] = 255;
+      rawData[pxOffset + 2] = 255;
+      rawData[pxOffset + 3] = 255;
+    }
+  }
+
+  // Vẽ các ký tự công thức sắc nét
+  for (let cIdx = 0; cIdx < displayStr.length; cIdx++) {
+    const ch = displayStr[cIdx];
+    const startX = paddingX + cIdx * charW;
+    const startY = paddingY + 2;
+
+    for (let py = 0; py < 9; py++) {
+      for (let px = 0; px < 5; px++) {
+        let drawPixel = false;
+        if (ch === ' ' || ch === '\t') {
+          drawPixel = false;
+        } else if (ch === '-') {
+          if (py === 4 && px >= 0 && px <= 4) drawPixel = true;
+        } else if (ch === '+') {
+          if ((py === 4 && px >= 0 && px <= 4) || (px === 2 && py >= 2 && py <= 6)) drawPixel = true;
+        } else if (ch === '=') {
+          if ((py === 3 || py === 5) && px >= 0 && px <= 4) drawPixel = true;
+        } else if (ch === '(' || ch === ')') {
+          if (ch === '(' && ((px === 1 && py >= 1 && py <= 7) || (px === 2 && (py === 0 || py === 8)))) drawPixel = true;
+          if (ch === ')' && ((px === 3 && py >= 1 && py <= 7) || (px === 2 && (py === 0 || py === 8)))) drawPixel = true;
+        } else if (ch === '/' || ch === '√') {
+          if (px === Math.floor(py / 2)) drawPixel = true;
+        } else {
+          if ((px === 0 || px === 4) && py >= 1 && py <= 7) drawPixel = true;
+          if ((py === 0 || py === 4 || py === 8) && px >= 1 && px <= 3) drawPixel = true;
+        }
+
+        if (drawPixel) {
+          const drawX = startX + px;
+          const drawY = startY + py;
+          if (drawX >= 0 && drawX < width && drawY >= 0 && drawY < height) {
+            const pxOffset = drawY * rowSize + 1 + drawX * 4;
+            rawData[pxOffset] = 0;
+            rawData[pxOffset + 1] = 0;
+            rawData[pxOffset + 2] = 0;
+            rawData[pxOffset + 3] = 255;
+          }
+        }
+      }
+    }
+  }
+
+  const compressed = zlib.deflateSync(rawData);
+
+  function crc32(buf) {
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < buf.length; i++) {
+      crc = crc ^ buf[i];
+      for (let j = 0; j < 8; j++) {
+        crc = (crc >>> 1) ^ (crc & 1 ? 0xEDB88320 : 0);
+      }
+    }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function makeChunk(type, data) {
+    const typeBuf = Buffer.from(type, 'ascii');
+    const lenBuf = Buffer.alloc(4);
+    lenBuf.writeUInt32BE(data.length, 0);
+    const toCrc = Buffer.concat([typeBuf, data]);
+    const crcBuf = Buffer.alloc(4);
+    crcBuf.writeUInt32BE(crc32(toCrc), 0);
+    return Buffer.concat([lenBuf, toCrc, crcBuf]);
+  }
+
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  const ihdrData = Buffer.alloc(13);
+  ihdrData.writeUInt32BE(width, 0);
+  ihdrData.writeUInt32BE(height, 4);
+  ihdrData[8] = 8;
+  ihdrData[9] = 6;
+  ihdrData[10] = 0;
+  ihdrData[11] = 0;
+  ihdrData[12] = 0;
+
+  const ihdr = makeChunk('IHDR', ihdrData);
+  const idat = makeChunk('IDAT', compressed);
+  const iend = makeChunk('IEND', Buffer.alloc(0));
+  return {
+    buffer: Buffer.concat([signature, ihdr, idat, iend]),
+    widthPt: Math.max(36, Math.round(width * 0.75)),
+    heightPt: Math.max(16, Math.round(height * 0.75))
+  };
+}
+
+/**
+ * Hậu xử lý nhúng đối tượng MathType OLE vào OpenXML .docx
+ * Liên kết cấu trúc <w:object> với binary MTEF và <v:shapetype id="_x0000_t75">
+ */
 async function injectMathTypeOleObjects(buffer, formulaRegistry) {
   if (!formulaRegistry || formulaRegistry.length === 0) return buffer;
   try {
     const zip = await JSZip.loadAsync(buffer);
 
+    // 1. Đăng ký Extension .bin và .png trong [Content_Types].xml
     let ct = await zip.file('[Content_Types].xml').async('text');
     if (!ct.includes('Extension="bin"')) {
       ct = ct.replace('</Types>', '<Default Extension="bin" ContentType="application/vnd.openxmlformats-officedocument.oleObject"/></Types>');
-      zip.file('[Content_Types].xml', ct);
     }
+    if (!ct.includes('Extension="png"')) {
+      ct = ct.replace('</Types>', '<Default Extension="png" ContentType="image/png"/></Types>');
+    }
+    zip.file('[Content_Types].xml', ct);
 
+    // 2. Cập nhật namespace VML & Office trong word/document.xml
     let docXml = await zip.file('word/document.xml').async('text');
     if (!docXml.includes('xmlns:v=')) {
       docXml = docXml.replace('<w:document ', '<w:document xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" ');
     }
 
+    // 3. Đăng ký relationships trong word/_rels/document.xml.rels
     let docRels = await zip.file('word/_rels/document.xml.rels').async('text');
     let newRels = '';
 
-    const fallbackPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+    // Định nghĩa chuẩn cho shape prototype _x0000_t75 của Microsoft Office
+    const shapetypeXml = `
+      <v:shapetype id="_x0000_t75" coordsize="21600,21600" o:spt="75" o:preferrelative="t" path="m@4@5l@4@11@9@11@9@5xe" filled="f" stroked="f">
+        <v:stroke joinstyle="miter"/>
+        <v:formulas>
+          <v:f eqn="if lineDrawn pixelLineWidth 0"/>
+          <v:f eqn="sum @0 1 0"/>
+          <v:f eqn="sum 0 0 @1"/>
+          <v:f eqn="prod @2 1 2"/>
+          <v:f eqn="prod @3 21600 pixelWidth"/>
+          <v:f eqn="prod @3 21600 pixelHeight"/>
+          <v:f eqn="sum @0 0 1"/>
+          <v:f eqn="prod @6 1 2"/>
+          <v:f eqn="prod @7 21600 pixelWidth"/>
+          <v:f eqn="sum @8 21600 0"/>
+          <v:f eqn="prod @7 21600 pixelHeight"/>
+          <v:f eqn="sum @10 21600 0"/>
+        </v:formulas>
+        <v:path o:extrusionok="f" gradientshapeok="t" o:connecttype="rect"/>
+        <o:lock v:ext="edit" aspectratio="t"/>
+      </v:shapetype>
+    `;
 
     for (let idx = 0; idx < formulaRegistry.length; idx++) {
       const item = formulaRegistry[idx];
@@ -724,22 +1000,26 @@ async function injectMathTypeOleObjects(buffer, formulaRegistry) {
       const oleRelId = `rIdMathOle${fId}`;
       const imgRelId = `rIdMathImg${fId}`;
 
+      // a. Sinh nhị phân MTEF v3 và đóng gói OLE Compound File
       const mtefBytes = buildMtefFromLatex(item.cleanLatex);
       const oleBin = buildMathTypeOleCompoundFile(mtefBytes);
       zip.file(`word/embeddings/oleObject${fId}.bin`, oleBin);
-      zip.file(`word/media/image_math_${fId}.png`, fallbackPng);
 
+      // b. Sinh ảnh preview PNG rõ nét
+      const preview = generateFormulaPreviewPng(item.cleanLatex);
+      zip.file(`word/media/image_math_${fId}.png`, preview.buffer);
+
+      // c. Đăng ký relationship
       newRels += `
         <Relationship Id="${oleRelId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/oleObject" Target="embeddings/oleObject${fId}.bin"/>
         <Relationship Id="${imgRelId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image_math_${fId}.png"/>
       `;
 
-      const approxWidth = Math.max(36, Math.min(300, Math.round((item.cleanLatex.length * 8.5))));
-      const approxHeight = item.cleanLatex.includes('\\frac') ? 34 : 18;
-
+      // d. Tạo thẻ <w:object> nhúng OLE với shapetype hợp lệ
       const oleXml = `
-        <w:object w:dxaOrig="${approxWidth * 20}" w:dyaOrig="${approxHeight * 20}">
-          <v:shape id="_x0000_i${1000 + fId}" type="#_x0000_t75" style="width:${approxWidth}pt;height:${approxHeight}pt" o:ole="">
+        <w:object w:dxaOrig="${preview.widthPt * 20}" w:dyaOrig="${preview.heightPt * 20}">
+          ${idx === 0 ? shapetypeXml : ''}
+          <v:shape id="_x0000_i${1000 + fId}" type="#_x0000_t75" style="width:${preview.widthPt}pt;height:${preview.heightPt}pt;vertical-align:middle" o:ole="">
             <v:imagedata r:id="${imgRelId}" o:title=""/>
           </v:shape>
           <o:OLEObject Type="Embed" ProgID="Equation.DSMT4" ShapeID="_x0000_i${1000 + fId}" DrawAspect="Content" ObjectID="_${fId}" r:id="${oleRelId}"/>

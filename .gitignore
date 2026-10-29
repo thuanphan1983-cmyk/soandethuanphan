@@ -1,0 +1,5 @@
+node_modules/
+*.docx
+test-mathtype-engine.js
+test-serverless.js
+.DS_Store
