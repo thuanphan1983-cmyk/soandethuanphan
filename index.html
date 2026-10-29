@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ thống Khảo sát & Thi Trực Tuyến STEM LMS</title>
+  
+  <!-- Google Fonts Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- KaTeX CSS for Math Formulas -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ================= NAVBAR ================= -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <div class="brand-logo">
+        <span class="badge-logo">STEM</span>
+        <span>EduLMS Exam</span>
+      </div>
+
+      <div class="nav-actions">
+        <!-- Badge thông tin học sinh khi đã đăng nhập -->
+        <div id="student-info-bar" style="display: flex; align-items: center; gap: 10px;">
+          <span id="student-class-badge" class="badge" style="background:#e0f2fe; color:#0284c7;"></span>
+          <span id="student-name-display" style="font-weight: 600; font-size: 0.95rem;"></span>
+          <button id="btn-student-signout" class="btn btn-secondary btn-sm" title="Đăng xuất" style="display: none;">Đăng xuất</button>
+        </div>
+        <a href="admin.html" class="btn btn-outline-primary btn-sm">🛠 Dành cho Admin</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MAIN VIEW CONTAINER ================= -->
+  <main class="container" style="flex: 1; padding-top: 1.5rem; padding-bottom: 2rem;">
+
+    <!-- 1. MÀN HÌNH KHÓA: BẮT BUỘC ĐĂNG NHẬP BẰNG GOOGLE -->
+    <div id="auth-locked-screen" class="auth-locked-container">
+      <div class="auth-lock-card">
+        <div class="lock-icon-circle">
+          🔒
+        </div>
+        <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">
+          Phòng Thi Trực Tuyến Đang Khóa
+        </h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.75rem;">
+          Hệ thống yêu cầu xác thực danh tính học sinh an toàn qua tài khoản Google. Toàn bộ hình thức nhập tên thủ công đã bị vô hiệu hóa để bảo đảm tính minh bạch và công bằng.
+        </p>
+        
+        <button id="btn-google-login" class="btn btn-google btn-lg" style="width: 100%;">
+          <svg viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>Đăng nhập bằng Google để vào thi</span>
+        </button>
+
+        <div style="margin-top: 1.5rem; font-size: 0.8rem; color: #94a3b8; display: flex; justify-content: center; gap: 16px;">
+          <span>✓ Chống gian lận AI</span>
+          <span>✓ KaTeX STEM chuẩn hóa</span>
+          <span>✓ Đồng hồ đếm ngược tự nộp</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. PHẦN ỨNG DỤNG CHÍNH DÀNH CHO HỌC SINH (Sau khi đăng nhập) -->
+    <div id="student-main-app" class="hidden">
+
+      <!-- 2A. SẢNH CHỜ THI (EXAM LOBBY) -->
+      <section id="exam-lobby-section">
+        <div class="card" style="background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%); border-left: 5px solid var(--primary);">
+          <h2 style="font-size: 1.4rem; color: var(--primary); margin-bottom: 0.5rem;">
+            Chào mừng bạn đến với Phòng Thi Trực Tuyến!
+          </h2>
+          <p style="color: var(--secondary); font-size: 0.95rem;">
+            Chọn đề thi dưới đây để bắt đầu. Hệ thống sẽ tự động kích hoạt chế độ giám sát chống gian lận (Anti-Cheat), xáo trộn ngẫu nhiên toàn bộ câu hỏi và đáp án, cùng bộ đếm thời gian nghiêm ngặt.
+          </p>
+        </div>
+
+        <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main);">
+          Danh sách đề thi sẵn sàng:
+        </h3>
+        <div id="exam-cards-list">
+          <!-- Dynamic exam cards inserted by JS -->
+        </div>
+      </section>
+
+      <!-- 2B. PHÒNG THI ĐANG LÀM BÀI (ACTIVE EXAM) -->
+      <section id="exam-active-section" class="hidden">
+        
+        <!-- Sticky Timer & Status Bar -->
+        <div class="timer-bar">
+          <div>
+            <span id="current-exam-title" style="font-weight: 700; color: var(--text-main); font-size: 1.05rem;">Đề thi</span>
+            <span id="cheat-alert-badge" class="badge badge-vdc" style="display: none; margin-left: 8px;"></span>
+          </div>
+          <div id="timer-display" class="timer-display">
+            <span>⏱ 45:00</span>
+          </div>
+        </div>
+
+        <!-- Layout 2 Cột: Khung câu hỏi & Bảng điều hướng câu hỏi -->
+        <div class="exam-layout">
+          
+          <!-- Cột Trái: Nội dung câu hỏi hiện tại -->
+          <div>
+            <div id="current-question-box" class="question-box">
+              <!-- Nội dung câu hỏi render qua JS kèm KaTeX & BBT & SVG -->
+            </div>
+
+            <!-- Các nút thao tác câu hỏi -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div style="display: flex; gap: 8px;">
+                <button id="btn-prev-question" class="btn btn-secondary">← Câu trước</button>
+                <button id="btn-next-question" class="btn btn-primary">Câu tiếp theo →</button>
+              </div>
+
+              <div style="display: flex; gap: 8px;">
+                <button id="btn-flag-question" class="btn btn-secondary">☆ Đánh dấu xem lại</button>
+                <button id="btn-submit-exam" class="btn btn-success">✓ Nộp bài thi</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cột Phải: Bảng Palette câu hỏi -->
+          <div>
+            <div class="question-palette">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">
+                <strong style="font-size: 0.95rem;">Bảng câu hỏi</strong>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">
+                  Đã làm: <b id="answered-count" style="color: var(--primary);">0</b> / <span id="total-count">0</span>
+                </span>
+              </div>
+
+              <!-- Lưới các số câu hỏi -->
+              <div id="palette-grid" class="palette-grid">
+                <!-- Buttons generated by JS -->
+              </div>
+
+              <div style="margin-top: 1.25rem; font-size: 0.75rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="width: 14px; height: 14px; background: #dbeafe; border: 1px solid #93c5fd; border-radius: 3px; display: inline-block;"></span>
+                  <span>Đã trả lời</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="width: 14px; height: 14px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 3px; display: inline-block;"></span>
+                  <span>Chưa trả lời</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="width: 14px; height: 14px; border: 2px solid var(--warning); border-radius: 3px; display: inline-block;"></span>
+                  <span>Đã đánh dấu xem lại</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 2C. MÀN HÌNH KẾT QUẢ BÀI THI -->
+      <section id="exam-result-section" class="hidden">
+        <div class="result-banner">
+          <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.25rem;">KẾT QUẢ BÀI THI</h2>
+          <p id="result-student-name" style="font-size: 1.1rem; opacity: 0.95;"></p>
+          <p id="result-class-name" style="font-size: 0.9rem; opacity: 0.8;"></p>
+
+          <div class="score-circle">
+            <span id="result-score-val" class="score-number">0.0</span>
+            <span class="score-max">/ 10 điểm</span>
+          </div>
+
+          <p id="result-summary-text" style="font-size: 1.1rem; font-weight: 600;"></p>
+        </div>
+
+        <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem;">
+          Chi tiết đáp án & Lời giải bài thi (Chuẩn KaTeX):
+        </h3>
+        <div id="result-review-list">
+          <!-- Rendered by JS -->
+        </div>
+
+        <div style="text-align: center; margin-top: 2rem;">
+          <button onclick="location.reload()" class="btn btn-primary btn-lg">← Quay về Sảnh thi</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ================= POPUP BẮT BUỘC CHỌN KHỐI & LỚP (LẦN ĐẦU) ================= -->
+  <div id="student-profile-modal" class="modal-overlay hidden">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">
+          🎓 Khởi tạo Thông tin Học sinh
+        </h3>
+      </div>
+      <form id="profile-setup-form">
+        <div class="modal-body">
+          <p style="font-size: 0.9rem; color: var(--secondary); margin-bottom: 1.25rem;">
+            Chào mừng bạn đến với hệ thống! Hãy chọn Khối và Lớp của bạn để hệ thống lưu hồ sơ phục vụ cho việc chấm điểm và phân loại kết quả.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Họ và tên (Từ Google):</label>
+            <input type="text" id="profile-display-name" class="form-control" readonly style="background: #f1f5f9;">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Email Google:</label>
+            <input type="text" id="profile-email" class="form-control" readonly style="background: #f1f5f9;">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Chọn Khối học: <span style="color: red;">*</span></label>
+            <select id="select-grade" class="form-control form-select" required>
+              <option value="" disabled selected>-- Chọn Khối lớp --</option>
+              <option value="6">Khối 6</option>
+              <option value="7">Khối 7</option>
+              <option value="8">Khối 8</option>
+              <option value="9">Khối 9</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Chọn Lớp học: <span style="color: red;">*</span></label>
+            <select id="select-class" class="form-control form-select" required>
+              <option value="" disabled selected>-- Chọn Lớp --</option>
+              <option value="A1">Lớp A1</option>
+              <option value="A2">Lớp A2</option>
+              <option value="A3">Lớp A3</option>
+              <option value="A4">Lớp A4</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary" style="width: 100%;">
+            Xác nhận & Vào Phòng Thi ➜
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      © 2026 Hệ thống Khảo sát & Thi Trực Tuyến STEM LMS. Tích hợp KaTeX & Google Firebase.
+    </div>
+  </footer>
+
+  <!-- Firebase v8 CDN SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- KaTeX Core & Auto-render extension CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+  <!-- LMS Modules -->
+  <script src="js/katex-render.js"></script>
+  <script src="js/exam-bank.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/student-exam.js"></script>
+
+  <script>
+    // Hiện nút đăng xuất khi có user
+    window.addEventListener('load', function() {
+      const user = window.LmsFirebase.getCurrentUser();
+      const signoutBtn = document.getElementById('btn-student-signout');
+      if (user && signoutBtn) {
+        signoutBtn.style.display = 'inline-flex';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "lms-system",
+  "version": "1.0.0",
+  "description": "LMS System with OpenRouter AI Exam Generator and Word Export Serverless Function",
+  "main": "api/export-word.js",
+  "scripts": {
+    "start": "node api/export-word.js",
+    "test": "node test-export.js"
+  },
+  "dependencies": {
+    "docx": "^8.5.0",
+    "jszip": "^3.10.1",
+    "cfb": "^1.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
