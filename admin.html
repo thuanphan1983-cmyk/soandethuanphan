@@ -1,329 +1,501 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="h-full bg-slate-50">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard - Công Cụ Tạo Đề AI & Quản Lý Thi STEM</title>
+  <title>Admin Studio - Soạn Đề Thi Toán AI & Xuất Word OMML / MathType OLE</title>
 
   <!-- Google Fonts Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-  <!-- KaTeX CSS for Math Formulas -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
 
-  <!-- Main Stylesheet -->
+  <!-- KaTeX CSS (CDNJS - Chuẩn 0.16.9 không bao giờ lỗi 404 font) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+
+  <!-- Main Stylesheet for STEM & KaTeX Customizations -->
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body style="background-color: #f1f5f9;">
+<body class="min-h-full flex flex-col bg-slate-50 text-slate-800 antialiased font-sans">
 
   <!-- ================= NAVBAR ADMIN ================= -->
-  <header class="navbar">
-    <div class="container navbar-inner">
-      <div class="brand-logo">
-        <span class="badge-logo" style="background: #4338ca;">AI ADMIN</span>
-        <span>LMS Test Generator</span>
+  <header class="bg-white/95 backdrop-blur border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-[1720px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 flex items-center justify-center text-white shadow-md shadow-indigo-100 font-black text-xl">
+          ∑
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-none">Studio Soạn Đề Toán STEM</h1>
+            <span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">AI 2.0 Fullstack</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5 hidden md:block">Office Math (OMML) • MathType OLE • KaTeX Live Render • Vercel Ready</p>
+        </div>
       </div>
 
-      <div class="nav-actions">
-        <!-- Bộ đếm Realtime Presence học sinh Online -->
-        <div class="badge badge-online" style="padding: 6px 14px; font-size: 0.85rem;">
-          <span class="pulse-dot"></span>
-          <span>Đang Online: <strong id="online-students-count" style="font-size: 1rem; color: #15803d;">0</strong> học sinh</span>
+      <!-- Quick Actions & Presence -->
+      <div class="flex items-center gap-3">
+        <!-- Live Realtime Presence Badge -->
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800" title="Giám sát học sinh thời gian thực">
+          <span class="relative flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <span>Online: <strong id="online-students-count" class="text-emerald-950 font-extrabold text-sm">0</strong></span>
         </div>
 
-        <a href="index.html" class="btn btn-outline-primary btn-sm">🎯 Cổng làm bài học sinh ➜</a>
+        <!-- Student Portal Link -->
+        <a href="index.html" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 transition border border-slate-200">
+          <span>🎯 Cổng Học Sinh</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </a>
       </div>
     </div>
   </header>
 
-  <!-- ================= MAIN ADMIN CONTENT ================= -->
-  <main class="container" style="flex: 1; padding-top: 1.5rem; padding-bottom: 3rem;">
+  <!-- ================= BỐ CỤC 2 CỘT HIỆN ĐẠI (TAILWIND CSS) ================= -->
+  <main class="max-w-[1720px] w-full mx-auto px-4 sm:px-6 py-6 flex-1">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- ======================================================== -->
+      <!-- CỘT BÊN TRÁI (LEFT): CẤU HÌNH MA TRẬN & AI GENERATOR     -->
+      <!-- ======================================================== -->
+      <div class="lg:col-span-5 xl:col-span-4 space-y-5 lg:sticky lg:top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1">
 
-    <!-- 1. GIÁM SÁT TRẠNG THÁI HỌC SINH THỜI GIAN THỰC (PRESENCE) -->
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
-          <span>🟢 Giám Sát Thời Gian Thực (Firebase Presence & onDisconnect)</span>
-        </h2>
-        <span style="font-size: 0.85rem; color: var(--text-muted);">Tự động phát hiện học sinh vào phòng thi hoặc đóng trình duyệt</span>
-      </div>
+        <!-- THẺ 1: CẤU HÌNH OPENROUTER AI & MODEL -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-sm">⚡</span>
+              <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Cấu hình OpenRouter AI</h2>
+            </div>
+            <span class="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">gpt-4o-mini ready</span>
+          </div>
 
-      <div style="overflow-x: auto;">
-        <table class="bbt-table" style="min-width: 100%; border: 1px solid var(--border);">
-          <thead>
-            <tr style="background: #f8fafc;">
-              <th style="width: 50px;">STT</th>
-              <th>Họ và Tên Học Sinh</th>
-              <th>Email Tài Khoản Google</th>
-              <th>Khối & Lớp</th>
-              <th>Trạng Thái Kết Nối</th>
-            </tr>
-          </thead>
-          <tbody id="online-users-tbody">
-            <!-- Dynamic Presence rows inserted by JS -->
-          </tbody>
-        </table>
-      </div>
-    </div>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">
+                OpenRouter API Key:
+                <span class="font-normal text-slate-400 text-[11px]">(sk-or-v1-...)</span>
+              </label>
+              <input type="password" id="gemini-api-key-input" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition" placeholder="Dán mã khóa sk-or-v1-... vào đây">
+            </div>
 
-    <!-- 2. GIAO DIỆN TẠO ĐỀ THI BẰNG AI (OPENROUTER ENGINE) -->
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">
-          <span>✨ Công Cụ Tạo Đề Thi Trắc Nghiệm Bằng AI (OpenRouter Engine - GPT-4o Mini)</span>
-        </h2>
-      </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Mô hình AI:</label>
+              <select id="gemini-model-select" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs sm:text-sm text-slate-800 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition">
+                <option value="openai/gpt-4o-mini" selected>openai/gpt-4o-mini (Khuyên dùng - Chuẩn Toán & Nhanh)</option>
+                <option value="google/gemini-2.0-flash-001">google/gemini-2.0-flash-001 (Google Flash 2.0)</option>
+                <option value="anthropic/claude-3.5-haiku">anthropic/claude-3.5-haiku (Claude 3.5 Haiku)</option>
+                <option value="openai/gpt-4o">openai/gpt-4o (OpenAI GPT-4o Flagship)</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
-      <!-- Cấu hình OpenRouter API Key & Model -->
-      <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.5rem;">
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; align-items: end;">
-          <div>
-            <label class="form-label">
-              OpenRouter API Key:
-              <span style="font-weight: normal; color: var(--text-muted); font-size: 0.8rem;">(Mã sk-or-v1-... từ openrouter.ai; hoặc bấm "📂 Mở Ngân Hàng Đề Offline" / "⚡ Sinh đề mẫu Demo")</span>
+        <!-- THẺ 2: THIẾT LẬP MA TRẬN ĐỀ THI / PROMPT -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <!-- Tab Navigation -->
+          <div class="flex items-center gap-2 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
+            <button id="tab-btn-matrix" class="flex-1 py-1.5 px-3 rounded-lg bg-white text-indigo-700 shadow-sm transition active">📊 Ma trận đề thi</button>
+            <button id="tab-btn-prompt" class="flex-1 py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition">✍️ Prompt tự do</button>
+          </div>
+
+          <!-- TAB 1: MA TRẬN CHI TIẾT -->
+          <div id="matrix-mode-section" class="space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Khối lớp:</label>
+                <select id="matrix-grade" class="w-full rounded-xl border border-slate-300 px-2.5 py-1.5 text-xs sm:text-sm text-slate-800 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 outline-none">
+                  <option value="6">Khối 6 (THCS)</option>
+                  <option value="7">Khối 7 (THCS)</option>
+                  <option value="8">Khối 8 (THCS)</option>
+                  <option value="9">Khối 9 (Vào 10)</option>
+                  <option value="10">Khối 10 (THPT)</option>
+                  <option value="11">Khối 11 (THPT)</option>
+                  <option value="12" selected>Khối 12 (Tốt nghiệp)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Thời gian (phút):</label>
+                <input type="number" id="matrix-duration" class="w-full rounded-xl border border-slate-300 px-2.5 py-1.5 text-xs sm:text-sm text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 outline-none" value="45" min="5" max="180">
+              </div>
+
+              <div class="col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Chủ đề bài thi:</label>
+                <input type="text" id="matrix-topic" class="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-xs sm:text-sm text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 outline-none" value="Ứng dụng đạo hàm khảo sát hàm số và Đồ thị">
+              </div>
+
+              <div class="col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Tổng số lượng câu:</label>
+                <input type="number" id="matrix-total-questions" class="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-xs sm:text-sm text-slate-800 font-bold text-indigo-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 outline-none" value="20" min="1" max="100">
+              </div>
+            </div>
+
+            <!-- BẢNG MA TRẬN TỈ LỆ % NB - TH - VD - VDC -->
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Tỉ lệ mức độ nhận thức:</span>
+                <span id="matrix-preview-info" class="text-[11px] font-semibold text-indigo-700">Dự kiến: 8 NB, 6 TH, 4 VD, 2 VDC</span>
+              </div>
+
+              <!-- Thanh tiến độ phân chia màu trực quan -->
+              <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden flex shadow-inner">
+                <div id="matrix-progress-nb" class="bg-emerald-500 transition-all duration-300" style="width: 40%;" title="Nhận biết: 40%"></div>
+                <div id="matrix-progress-th" class="bg-sky-500 transition-all duration-300" style="width: 30%;" title="Thông hiểu: 30%"></div>
+                <div id="matrix-progress-vd" class="bg-amber-500 transition-all duration-300" style="width: 20%;" title="Vận dụng: 20%"></div>
+                <div id="matrix-progress-vdc" class="bg-rose-500 transition-all duration-300" style="width: 10%;" title="Vận dụng cao: 10%"></div>
+              </div>
+
+              <!-- 4 Thanh trượt tỉ lệ % -->
+              <div class="space-y-2 pt-1 text-xs">
+                <!-- NB -->
+                <div class="flex items-center gap-2">
+                  <span class="w-24 text-emerald-700 font-bold flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Nhận biết:
+                  </span>
+                  <input type="range" id="matrix-pct-nb" min="0" max="100" step="5" value="40" class="flex-1 accent-emerald-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+                  <span id="matrix-pct-nb-val" class="w-10 text-right font-bold text-emerald-800">40%</span>
+                </div>
+
+                <!-- TH -->
+                <div class="flex items-center gap-2">
+                  <span class="w-24 text-sky-700 font-bold flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-sky-500 inline-block"></span> Thông hiểu:
+                  </span>
+                  <input type="range" id="matrix-pct-th" min="0" max="100" step="5" value="30" class="flex-1 accent-sky-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+                  <span id="matrix-pct-th-val" class="w-10 text-right font-bold text-sky-800">30%</span>
+                </div>
+
+                <!-- VD -->
+                <div class="flex items-center gap-2">
+                  <span class="w-24 text-amber-700 font-bold flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span> Vận dụng:
+                  </span>
+                  <input type="range" id="matrix-pct-vd" min="0" max="100" step="5" value="20" class="flex-1 accent-amber-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+                  <span id="matrix-pct-vd-val" class="w-10 text-right font-bold text-amber-800">20%</span>
+                </div>
+
+                <!-- VDC -->
+                <div class="flex items-center gap-2">
+                  <span class="w-24 text-rose-700 font-bold flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span> Vận dụng cao:
+                  </span>
+                  <input type="range" id="matrix-pct-vdc" min="0" max="100" step="5" value="10" class="flex-1 accent-rose-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+                  <span id="matrix-pct-vdc-val" class="w-10 text-right font-bold text-rose-800">10%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- TÙY CHỌN YÊU CẦU ĐỒ THỊ & BBT -->
+            <div class="space-y-2 pt-1 text-xs">
+              <label class="flex items-center gap-2.5 text-slate-700 cursor-pointer font-medium">
+                <input type="checkbox" id="matrix-req-bbt" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                <span>Có ít nhất 1 câu Bảng Biến Thiên (BBT HTML Table)</span>
+              </label>
+              <label class="flex items-center gap-2.5 text-slate-700 cursor-pointer font-medium">
+                <input type="checkbox" id="matrix-req-svg" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                <span>Có ít nhất 1 câu Đồ thị hàm số / Hình học vector SVG</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- TAB 2: PROMPT TỰ DO -->
+          <div id="prompt-mode-section" class="hidden space-y-3">
+            <label class="block text-xs font-semibold text-slate-700">
+              Nhập lời nhắc (Prompt) hoặc dán đề mẫu:
             </label>
-            <input type="password" id="gemini-api-key-input" class="form-control" placeholder="Dán mã khóa sk-or-v1-... vào đây">
-          </div>
-          <div>
-            <label class="form-label">Mô hình AI:</label>
-            <select id="gemini-model-select" class="form-control form-select">
-              <option value="openai/gpt-4o-mini" selected>openai/gpt-4o-mini (Khuyên dùng - Chuẩn Toán học & Tốc độ cao)</option>
-              <option value="google/gemini-2.0-flash-001">google/gemini-2.0-flash-001 (Google Flash 2.0)</option>
-              <option value="anthropic/claude-3.5-haiku">anthropic/claude-3.5-haiku (Claude 3.5 Haiku)</option>
-              <option value="openai/gpt-4o">openai/gpt-4o (OpenAI GPT-4o Flagship)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tabs chọn chế độ: Matrix Mode vs Prompt Mode -->
-      <div class="tab-nav">
-        <button id="tab-btn-matrix" class="tab-btn active">📊 Chế độ Ma trận (Matrix Mode)</button>
-        <button id="tab-btn-prompt" class="tab-btn">✍️ Chế độ Văn bản (Prompt Mode)</button>
-      </div>
-
-      <!-- CHẾ ĐỘ 1: MA TRẬN ĐỀ THI -->
-      <div id="matrix-mode-section">
-        <div class="matrix-grid" style="margin-bottom: 1.25rem;">
-          <div class="form-group">
-            <label class="form-label">Khối lớp:</label>
-            <select id="matrix-grade" class="form-control form-select">
-              <option value="6">Khối 6 (THCS)</option>
-              <option value="7">Khối 7 (THCS)</option>
-              <option value="8">Khối 8 (THCS)</option>
-              <option value="9" selected>Khối 9 (Ôn thi vào 10)</option>
-              <option value="10">Khối 10 (THPT)</option>
-              <option value="11">Khối 11 (THPT)</option>
-              <option value="12">Khối 12 (Tốt nghiệp THPT)</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Chủ đề bài thi:</label>
-            <input type="text" id="matrix-topic" class="form-control" value="Hàm số bậc nhất, bậc hai và Phương trình" placeholder="Ví dụ: Lượng giác, Định lý Vi-et...">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Số lượng câu hỏi:</label>
-            <input type="number" id="matrix-total-questions" class="form-control" value="20" min="1" max="100">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Thời gian làm bài (Phút):</label>
-            <input type="number" id="matrix-duration" class="form-control" value="45" min="5" max="180">
+            <textarea id="prompt-custom-text" rows="5" class="w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition" placeholder="Ví dụ: Tạo 5 câu trắc nghiệm Toán 12 chương I về tiệm cận và cực trị, công thức toán bọc trong $...$, có lời giải chi tiết..."></textarea>
           </div>
         </div>
 
-        <!-- Tỷ lệ % mức độ nhận thức -->
-        <div style="background: #eff6ff; padding: 1rem; border-radius: var(--radius-md); border: 1px solid #bfdbfe; margin-bottom: 1.25rem;">
-          <label class="form-label" style="color: #1e40af; margin-bottom: 0.75rem;">
-            Phân bố Tỷ lệ % Ma trận chuẩn (NB - TH - VD - VDC):
-          </label>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
-            <div>
-              <span class="badge badge-nb">Nhận biết (%)</span>
-              <input type="number" id="matrix-pct-nb" class="form-control" value="40" min="0" max="100" style="margin-top: 4px;">
-            </div>
-            <div>
-              <span class="badge badge-th">Thông hiểu (%)</span>
-              <input type="number" id="matrix-pct-th" class="form-control" value="30" min="0" max="100" style="margin-top: 4px;">
-            </div>
-            <div>
-              <span class="badge badge-vd">Vận dụng (%)</span>
-              <input type="number" id="matrix-pct-vd" class="form-control" value="20" min="0" max="100" style="margin-top: 4px;">
-            </div>
-            <div>
-              <span class="badge badge-vdc">Vận dụng cao (%)</span>
-              <input type="number" id="matrix-pct-vdc" class="form-control" value="10" min="0" max="100" style="margin-top: 4px;">
-            </div>
-          </div>
-          <p id="matrix-calculated-counts" style="font-size: 0.85rem; color: #1d4ed8; margin-top: 8px; font-weight: 500;">
-            Dự kiến: 8 câu NB, 6 câu TH, 4 câu VD, 2 câu VDC (Tổng: 20 câu)
-          </p>
-        </div>
-
-        <!-- Yêu cầu Bảng biến thiên & SVG -->
-        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 1.25rem;">
-          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.95rem; cursor: pointer;">
-            <input type="checkbox" id="matrix-req-bbt" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-            <span>Bắt buộc có câu hỏi chứa <strong>Bảng biến thiên HTML Table</strong></span>
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.95rem; cursor: pointer;">
-            <input type="checkbox" id="matrix-req-svg" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-            <span>Bắt buộc có câu hỏi đồ thị vẽ bằng <strong>Mã SVG / [CHÈN HÌNH ẢNH]</strong></span>
-          </label>
-        </div>
-      </div>
-
-      <!-- CHẾ ĐỘ 2: VĂN BẢN (PROMPT MODE) -->
-      <div id="prompt-mode-section" class="hidden">
-        <div class="form-group">
-          <label class="form-label">
-            Dán đề thi mẫu hoặc nhập lời nhắc (Prompt) tự do:
-          </label>
-          <textarea id="prompt-custom-text" class="form-control" rows="6" placeholder="Ví dụ: Hãy tạo cho tôi 5 câu trắc nghiệm Toán 9 chủ đề Giải bài toán bằng cách lập hệ phương trình, có lời giải chi tiết và biểu thức LaTeX đẹp..."></textarea>
-        </div>
-      </div>
-
-      <!-- Nút kích hoạt AI & Ngân hàng đề -->
-      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 1rem;">
-        <button id="btn-generate-ai" class="btn btn-primary btn-lg">
-          <span>✨ Tạo đề thi bằng AI (GPT-4o Mini)</span>
-        </button>
-
-        <button id="btn-load-exam-bank" class="btn btn-success btn-lg" style="background-color: var(--success); color: #ffffff; border-color: var(--success); font-weight: 600;" title="Mở Ngân Hàng Đề Offline và nạp ngẫu nhiên câu hỏi mà không cần dùng Gemini API">
-          <span>📂 Mở Ngân Hàng Đề Offline</span>
-        </button>
-
-        <button id="btn-generate-demo" class="btn btn-secondary btn-lg" title="Thử nghiệm tạo đề mẫu ngay mà không cần cấu hình key">
-          <span>⚡ Sinh đề mẫu Demo (STEM)</span>
-        </button>
-
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span id="ai-loading-spinner" class="pulse-dot" style="display: none; background: var(--primary);"></span>
-          <span id="ai-status-message" style="font-size: 0.9rem; font-weight: 500; color: var(--secondary);"></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3. KHU VỰC EDITABLE PREVIEW (CHỈNH SỬA ĐỀ VỪA TẠO) -->
-    <div id="editable-preview-section" class="card hidden" style="border: 2px solid var(--primary);">
-      <div class="card-header" style="background: #eff6ff; margin: -1.5rem -1.5rem 1.5rem -1.5rem; padding: 1.25rem 1.5rem; flex-wrap: wrap; gap: 12px;">
-        <div>
-          <h2 class="card-title" style="color: var(--primary); font-size: 1.25rem;">
-            📝 Bản Xem Trước & Hiệu Đính Đề Thi (Editable Preview)
-          </h2>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">
-            Bạn có thể chỉnh sửa trực tiếp nội dung, công thức KaTeX, chọn lại đáp án đúng, hoặc tải ảnh đồ thị từ GeoGebra/máy tính lên.
-          </p>
-        </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-          <button id="btn-add-new-question" class="btn btn-secondary btn-sm">+ Thêm câu hỏi</button>
-          <button id="btn-save-to-bank" class="btn btn-outline-primary btn-sm">
-            <span>💾 Lưu vào Ngân hàng đề</span>
+        <!-- THẺ 3: NÚT SINH ĐỀ AI & NGÂN HÀNG ĐỀ -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <!-- Nút chính: AI OpenRouter gpt-4o-mini -->
+          <button id="btn-generate-ai" class="w-full py-3 px-4 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 shadow-md shadow-indigo-100 transition flex items-center justify-center gap-2 active:scale-[0.99]">
+            <span class="text-base">✨</span>
+            <span>Tạo đề thi bằng AI (GPT-4o Mini)</span>
           </button>
+
+          <!-- Nút phụ 1: Mở Ngân Hàng Đề Offline -->
+          <button id="btn-load-exam-bank" class="w-full py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-100 transition flex items-center justify-center gap-2 active:scale-[0.99]" title="Nạp 100 câu hỏi offline ngay lập tức không cần API Key">
+            <span>📂</span>
+            <span>Mở Ngân Hàng Đề Offline (100 Câu Chuẩn)</span>
+          </button>
+
+          <!-- Nút phụ 2: Sinh đề mẫu Demo -->
+          <button id="btn-generate-demo" class="w-full py-2 px-3 rounded-xl font-semibold text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition border border-slate-200 flex items-center justify-center gap-1.5">
+            <span>⚡</span>
+            <span>Sinh đề mẫu Demo (STEM Test)</span>
+          </button>
+
+          <!-- Loading & Status Message -->
+          <div class="flex items-center gap-2 text-xs pt-1">
+            <span id="ai-loading-spinner" class="pulse-dot" style="display: none; background: #4f46e5;"></span>
+            <span id="ai-status-message" class="font-medium text-slate-600"></span>
+          </div>
+        </div>
+
+        <!-- THẺ 4: CÔNG CỤ CHÈN NHANH STEM (TOOLKIT) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <span>🛠️</span> Công cụ Chèn Nhanh
+            </span>
+            <span class="text-[10px] text-slate-400">Click để chèn vào đề</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <button type="button" id="btn-insert-sample-bbt" class="p-2 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 font-medium transition text-left flex items-center gap-1.5">
+              <span>📊</span>
+              <span>Bảng biến thiên (BBT)</span>
+            </button>
+
+            <button type="button" id="btn-insert-graph-parabola" class="p-2 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-900 font-medium transition text-left flex items-center gap-1.5">
+              <span>📈</span>
+              <span>Đồ thị Parabol</span>
+            </button>
+
+            <button type="button" id="btn-insert-graph-cubic" class="p-2 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 font-medium transition text-left flex items-center gap-1.5">
+              <span>📈</span>
+              <span>Đồ thị Bậc 3</span>
+            </button>
+
+            <button type="button" id="btn-insert-graph-rational" class="p-2 rounded-lg border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-900 font-medium transition text-left flex items-center gap-1.5">
+              <span>📈</span>
+              <span>Đồ thị Phân thức</span>
+            </button>
+
+            <button type="button" id="btn-add-quick-question" class="col-span-2 p-2 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold transition flex items-center justify-center gap-1.5">
+              <span>➕</span>
+              <span>Thêm 1 Câu Hỏi Mới</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- CỘT BÊN PHẢI (RIGHT): KHUNG SOẠN THẢO, KATEX & XUẤT WORD -->
+      <!-- ======================================================== -->
+      <div class="lg:col-span-7 xl:col-span-8 space-y-5 min-w-0">
+
+        <!-- THẺ CỐ ĐỊNH ĐỈNH BÊN PHẢI: TIÊU ĐỀ ĐỀ & BỘ NÚT XUẤT WORD -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <!-- Dòng 1: Tên đề thi & Thời gian thi -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+            <div class="md:col-span-8">
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Tên đề thi biên soạn:</label>
+              <input type="text" id="preview-exam-title" class="w-full text-base sm:text-lg font-bold text-indigo-950 border border-slate-300 rounded-xl px-3.5 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition" value="ĐỀ KHẢO SÁT CHẤT LƯỢNG TOÁN 12 - HỌC KỲ I">
+            </div>
+
+            <div class="md:col-span-4 flex items-center gap-3">
+              <div class="flex-1">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Thời gian (phút):</label>
+                <input type="number" id="preview-exam-duration" class="w-full text-sm font-bold text-slate-800 border border-slate-300 rounded-xl px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" value="45">
+              </div>
+              <div class="pt-5">
+                <span id="preview-question-counter" class="inline-flex items-center px-3 py-2 text-xs font-bold rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 whitespace-nowrap">
+                  0 câu hỏi
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dòng 2: Thanh công cụ Xuất File Word & Thao tác chính -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="btn-add-new-question" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition">
+                <span>➕</span>
+                <span>Thêm câu hỏi</span>
+              </button>
+
+              <button id="btn-save-to-bank" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition">
+                <span>💾</span>
+                <span>Lưu vào CSDL Firebase</span>
+              </button>
+            </div>
+
+            <!-- Cụm Xuất File Word (2 Tùy chọn OMML & MathType OLE) -->
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- Nhóm 1: Word Equation (OMML) -->
+              <div class="inline-flex items-center bg-blue-50/80 border border-blue-200 rounded-xl p-1 gap-1">
+                <span class="text-[11px] font-extrabold text-blue-900 px-2" title="Công thức chuẩn Word Equation (OMML, Cambria Math)">📄 Word Equation:</span>
+                <button id="btn-export-omml-exam" class="px-2.5 py-1 text-xs font-bold rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-xs transition" title="Xuất đề thi chuẩn Word Equation - Bản Đề Bài">
+                  Đề bài
+                </button>
+                <button id="btn-export-omml-solutions" class="px-2.5 py-1 text-xs font-bold rounded-lg text-white bg-blue-800 hover:bg-blue-900 shadow-xs transition" title="Xuất đề thi chuẩn Word Equation - Kèm Lời Giải Chi Tiết">
+                  Kèm Lời giải
+                </button>
+              </div>
+
+              <!-- Nhóm 2: MathType OLE -->
+              <div class="inline-flex items-center bg-purple-50/80 border border-purple-200 rounded-xl p-1 gap-1">
+                <span class="text-[11px] font-extrabold text-purple-900 px-2" title="Công thức nhúng đối tượng MathType (OLE Equation.DSMT4 / MTEF) - Nhấp đúp mở sửa ngay bằng MathType">📐 MathType OLE:</span>
+                <button id="btn-export-mathtype-exam" class="px-2.5 py-1 text-xs font-bold rounded-lg text-white bg-purple-600 hover:bg-purple-700 shadow-xs transition" title="Xuất đề thi nhúng đối tượng MathType - Bản Đề Bài">
+                  Đề bài
+                </button>
+                <button id="btn-export-mathtype-solutions" class="px-2.5 py-1 text-xs font-bold rounded-lg text-white bg-purple-800 hover:bg-purple-900 shadow-xs transition" title="Xuất đề thi nhúng đối tượng MathType - Kèm Lời Giải Chi Tiết">
+                  Kèm Lời giải
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KHUNG PREVIEW & HIỆU ĐÍNH CÂU HỎI -->
+        <div id="editable-preview-section">
           
-          <!-- TÙY CHỌN 1: MICROSOFT WORD (.DOCX) - WORD EQUATION (OMML) -->
-          <div class="export-group-card" style="display: inline-flex; align-items: center; background: #eff6ff; border: 1.5px solid #93c5fd; border-radius: 8px; padding: 2px 4px; gap: 4px;">
-            <span style="font-size: 0.8rem; font-weight: 700; color: #1e40af; padding: 0 4px;" title="Xuất đề thi với công thức chuẩn Word Equation (OMML)">📄 Word Equation:</span>
-            <button id="btn-export-omml-exam" class="btn btn-primary btn-sm" title="Xuất đề thi chuẩn Word Equation (OMML) - Bản đề bài cho học sinh">
-              <span>Đề bài</span>
-            </button>
-            <button id="btn-export-omml-solutions" class="btn btn-primary btn-sm" style="background: #1d4ed8;" title="Xuất đề thi chuẩn Word Equation (OMML) - Kèm Bảng đáp án & Lời giải chi tiết">
-              <span>Kèm Lời giải</span>
-            </button>
+          <!-- Empty State (Khi chưa tạo hoặc nạp câu hỏi nào) -->
+          <div id="preview-empty-state" class="text-center py-16 px-6 bg-white rounded-2xl border border-dashed border-slate-300 shadow-sm space-y-4">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 text-2xl font-black shadow-inner">
+              📝
+            </div>
+            <div class="max-w-md mx-auto space-y-1">
+              <h3 class="text-base font-bold text-slate-800">Khung Soạn Thảo & Xem Trước Đề Thi</h3>
+              <p class="text-xs text-slate-500 leading-relaxed">
+                Chưa có câu hỏi nào trong bản xem trước. Hãy thiết lập ma trận và bấm <strong class="text-indigo-600">"Tạo đề thi bằng AI"</strong> hoặc <strong class="text-emerald-600">"Mở Ngân Hàng Đề Offline"</strong> ở cột bên trái để bắt đầu biên soạn.
+              </p>
+            </div>
+            <div class="pt-2 flex justify-center gap-3">
+              <button onclick="document.getElementById('btn-load-exam-bank').click()" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition">
+                <span>📂 Nạp Ngay 20 Câu Offline</span>
+              </button>
+              <button onclick="document.getElementById('btn-generate-demo').click()" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition">
+                <span>⚡ Thử Đề Mẫu STEM</span>
+              </button>
+            </div>
           </div>
 
-          <!-- TÙY CHỌN 2: MICROSOFT WORD, CÔNG THỨC MATHTYPE (.DOCX) - OLE EQUATION.DSMT4 / MTEF -->
-          <div class="export-group-card" style="display: inline-flex; align-items: center; background: #faf5ff; border: 1.5px solid #d8b4fe; border-radius: 8px; padding: 2px 4px; gap: 4px;">
-            <span style="font-size: 0.8rem; font-weight: 700; color: #6b21a8; padding: 0 4px;" title="Xuất đề thi với công thức nhúng MathType (OLE Equation.DSMT4 / MTEF) - Nhấp đúp mở sửa ngay bằng MathType">📐 MathType OLE:</span>
-            <button id="btn-export-mathtype-exam" class="btn btn-sm" style="background: #9333ea; color: #fff; font-weight: 600;" title="Xuất đề thi nhúng đối tượng MathType (OLE Equation.DSMT4 / MTEF) - Bản đề bài">
-              <span>Đề bài</span>
+          <!-- Danh sách câu hỏi render bởi JS -->
+          <div id="preview-questions-list" class="space-y-5"></div>
+
+          <!-- Thanh công cụ chân trang Preview: Thêm câu & Xuất Word -->
+          <div id="preview-bottom-actions" class="hidden mt-6 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+            <button id="btn-add-new-question-bottom" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition">
+              <span>➕</span>
+              <span>Thêm câu hỏi mới</span>
             </button>
-            <button id="btn-export-mathtype-solutions" class="btn btn-sm" style="background: #7e22ce; color: #fff; font-weight: 600;" title="Xuất đề thi nhúng đối tượng MathType (OLE Equation.DSMT4 / MTEF) - Kèm Lời giải chi tiết">
-              <span>Kèm Lời giải</span>
-            </button>
+
+            <!-- Lặp lại các nút xuất file Word ở cuối trang -->
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="inline-flex items-center bg-blue-50/80 border border-blue-200 rounded-xl p-1 gap-1">
+                <span class="text-[11px] font-extrabold text-blue-900 px-2">Word Equation:</span>
+                <button id="btn-export-omml-exam-bottom" class="px-2.5 py-1 text-xs font-bold rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-xs transition">
+                  Đề bài
+                </button>
+                <button id="btn-export-omml-solutions-bottom" class="px-2.5 py-1 text-xs font-bold rounded-lg text-white bg-blue-800 hover:bg-blue-900 shadow-xs transition">
+                  Kèm Lời giải
+                </button>
+              </div>
+
+              <div class="inline-flex items-center bg-purple-50/80 border border-purple-200 rounded-xl p-1 gap-1">
+                <span class="text-[11px] font-extrabold text-purple-900 px-2">MathType OLE:</span>
+                <button id="btn-export-mathtype-exam-bottom" class="px-2.5 py-1 text-xs font-bold rounded-lg text-white bg-purple-600 hover:bg-purple-700 shadow-xs transition">
+                  Đề bài
+                </button>
+                <button id="btn-export-mathtype-solutions-bottom" class="px-2.5 py-1 text-xs font-bold rounded-lg text-white bg-purple-800 hover:bg-purple-900 shadow-xs transition">
+                  Kèm Lời giải
+                </button>
+              </div>
+            </div>
           </div>
         </div>
+
       </div>
 
-      <!-- Tên đề & thời gian editable -->
-      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
-        <div class="form-group">
-          <label class="form-label">Tên đề thi:</label>
-          <input type="text" id="preview-exam-title" class="form-control" style="font-weight: 700; font-size: 1.05rem;">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Thời gian thi (phút):</label>
-          <input type="number" id="preview-exam-duration" class="form-control">
-        </div>
-      </div>
-
-      <!-- Danh sách các thẻ câu hỏi có thể sửa trực tiếp -->
-      <div id="preview-questions-list">
-        <!-- Rendered by JS -->
-      </div>
-
-      <!-- Thanh công cụ chân trang Preview: Thêm câu & Xuất Word / MathType chuyên nghiệp -->
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 1.5rem; border-top: 1px solid var(--border); margin-top: 1.5rem;">
-        <div>
-          <button id="btn-add-new-question-bottom" class="btn btn-secondary">+ Thêm câu hỏi mới</button>
-        </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-          <!-- TÙY CHỌN 1: WORD EQUATION -->
-          <div class="export-group-card" style="display: inline-flex; align-items: center; background: #eff6ff; border: 1.5px solid #93c5fd; border-radius: 8px; padding: 2px 4px; gap: 4px;">
-            <span style="font-size: 0.8rem; font-weight: 700; color: #1e40af; padding: 0 4px;">📄 Word Equation:</span>
-            <button id="btn-export-omml-exam-bottom" class="btn btn-primary btn-sm" title="Xuất đề thi chuẩn Word Equation (OMML) - Bản đề bài">
-              <span>Đề bài</span>
-            </button>
-            <button id="btn-export-omml-solutions-bottom" class="btn btn-primary btn-sm" style="background: #1d4ed8;" title="Xuất đề thi chuẩn Word Equation (OMML) - Kèm Lời giải chi tiết">
-              <span>Kèm Lời giải</span>
-            </button>
-          </div>
-
-          <!-- TÙY CHỌN 2: MATHTYPE OLE -->
-          <div class="export-group-card" style="display: inline-flex; align-items: center; background: #faf5ff; border: 1.5px solid #d8b4fe; border-radius: 8px; padding: 2px 4px; gap: 4px;">
-            <span style="font-size: 0.8rem; font-weight: 700; color: #6b21a8; padding: 0 4px;">📐 MathType OLE:</span>
-            <button id="btn-export-mathtype-exam-bottom" class="btn btn-sm" style="background: #9333ea; color: #fff; font-weight: 600;" title="Xuất đề thi nhúng đối tượng MathType (OLE Equation.DSMT4 / MTEF) - Bản đề bài">
-              <span>Đề bài</span>
-            </button>
-            <button id="btn-export-mathtype-solutions-bottom" class="btn btn-sm" style="background: #7e22ce; color: #fff; font-weight: 600;" title="Xuất đề thi nhúng đối tượng MathType (OLE Equation.DSMT4 / MTEF) - Kèm Lời giải chi tiết">
-              <span>Kèm Lời giải</span>
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- 4. DANH SÁCH NGÂN HÀNG ĐỀ THI HIỆN TẠI -->
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">📚 Ngân Hàng Đề Thi Đang Hoạt Động (Firebase Database)</h2>
-      </div>
-      <div id="admin-exam-bank-list">
-        <!-- Rendered by JS -->
-      </div>
+    <!-- ======================================================== -->
+    <!-- PHẦN MỞ RỘNG CUỐI TRANG: QUẢN LÝ NGÂN HÀNG CSDL FIREBASE -->
+    <!-- ======================================================== -->
+    <div class="mt-8">
+      <details class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden group">
+        <summary class="flex items-center justify-between p-4 px-6 cursor-pointer select-none bg-slate-50/70 hover:bg-slate-100/70 transition">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold flex items-center justify-center text-sm">📚</span>
+            <span class="text-sm font-bold text-slate-800">Quản Lý Ngân Hàng Đề Thi & Danh Sách Học Sinh Online (Firebase Database)</span>
+          </div>
+          <span class="text-xs text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+        </summary>
+        <div class="p-5 border-t border-slate-200 space-y-6">
+          <!-- Bảng Presence Học sinh -->
+          <div>
+            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">🟢 Danh sách học sinh đang kết nối Realtime:</h4>
+            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200">
+                  <tr>
+                    <th class="py-2.5 px-3 w-12">#</th>
+                    <th class="py-2.5 px-3">Tên học sinh</th>
+                    <th class="py-2.5 px-3">Email Google</th>
+                    <th class="py-2.5 px-3">Khối - Lớp</th>
+                    <th class="py-2.5 px-3">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody id="online-users-tbody" class="divide-y divide-slate-100">
+                  <tr><td colspan="5" class="py-4 text-center text-slate-400">Chưa có học sinh nào online.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Bảng Đề thi đã lưu -->
+          <div>
+            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">📚 Đề thi đang hoạt động trong CSDL Firebase:</h4>
+            <div id="admin-exam-bank-list" class="space-y-2"></div>
+          </div>
+        </div>
+      </details>
     </div>
 
   </main>
 
-  <!-- Footer -->
-  <footer>
-    <div class="container">
-      © 2026 Admin Dashboard LMS STEM - Hỗ trợ OpenRouter AI (gpt-4o-mini), Vercel Serverless Word Export, KaTeX & Firebase Realtime Database.
+  <!-- ================= FOOTER ================= -->
+  <footer class="mt-auto py-4 bg-white border-t border-slate-200 text-center text-xs text-slate-500">
+    <div class="max-w-[1720px] mx-auto px-4">
+      © 2026 Admin Dashboard LMS STEM • OpenRouter GPT-4o-mini • Vercel Serverless Word Export • KaTeX • Firebase Realtime Database
     </div>
   </footer>
 
+  <!-- ================= CDN SCRIPTS (TẤT CẢ ĐÃ KIỂM TRA 200 OK) ================= -->
   <!-- Firebase v8 CDN SDKs -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <!-- KaTeX Core & Auto-render extension CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <!-- KaTeX Core & Auto-render extension CDN (cdnjs.cloudflare.com ổn định tuyệt đối) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 
   <!-- Docx.js v8 OpenXML, JSZip, CFB & FileSaver CDN -->
   <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
@@ -331,7 +503,7 @@
   <script src="https://cdn.jsdelivr.net/npm/cfb@1.2.2/dist/cfb.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-  <!-- LMS Modules -->
+  <!-- Local LMS Modules -->
   <script src="js/katex-render.js"></script>
   <script src="js/exam-bank.js"></script>
   <script src="js/firebase-config.js"></script>
